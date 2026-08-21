@@ -1,0 +1,17 @@
+# Target source trees and generated analysis artifacts
+target/
+/logs/
+artifacts/
+tmp/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Common build/editor noise
+.DS_Store
+.idea/
+.vscode/
+node_modules/
+target-build/

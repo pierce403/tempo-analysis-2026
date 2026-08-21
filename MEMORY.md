@@ -1,0 +1,33 @@
+# Project Memory
+
+Curated, non-secret context for future work. Read the relevant linked notes rather than treating this file as a chronological transcript.
+
+## Stable project facts
+
+- This repository is a defensive, public-information attack-surface analysis of Tempo, loosely modeled after `coinbase-analysis-2025`.
+- The first phase is passive recon, architecture mapping, source review, and local reproduction. Active production testing requires explicit authorization.
+- `SCOPE.md` defines boundaries; `TASKS.md` tracks work; `PROCESS.md` defines the analysis workflow.
+
+## Verified snapshots
+
+- [Initial Tempo recon, 2026-08-21](recon/2026-08-21-initial-recon.md)
+- [Repository operating-system setup log, 2026-08-21](memory/logs/2026-08-21.md)
+
+## Decisions
+
+- [Memory and improvement model](memory/decisions/0001-memory-and-improvement-model.md)
+
+## Reusable notes
+
+- Add focused notes under `memory/notes/` when a fact or model will support more than one task.
+
+## Learning queue
+
+- [Proposed, active, and retired lessons](memory/learnings.md)
+
+## Memory hygiene
+
+- Prefer compact conclusions plus evidence pointers.
+- Date mutable facts and refresh them before claiming they are current.
+- Never store credentials, secrets, personal data, private vulnerability details, or unsupported allegations here.
+- Condense or archive stale material when this index stops being easy to scan.
