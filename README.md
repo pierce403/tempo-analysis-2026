@@ -11,6 +11,7 @@ Initial passive recon and scope definition began on 2026-08-21. No vulnerability
 Start with:
 
 - [SCOPE.md](SCOPE.md) — boundaries, priorities, and open scope questions
+- [THREAT_MODEL.md](THREAT_MODEL.md) — theft-focused adversary and trust-boundary model
 - [PROCESS.md](PROCESS.md) — evidence and analysis workflow
 - [TASKS.md](TASKS.md) — bounded research queue and acceptance evidence
 - [AGENTS.md](AGENTS.md) — repository operating and improvement loop

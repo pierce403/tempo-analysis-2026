@@ -2,9 +2,11 @@
 
 ## Objective
 
-Build an evidence-backed map of Tempo's attack surface, then analyze the paths most likely to affect funds, transaction authorization, finality, availability, compliance enforcement, and software-supply-chain integrity.
+Build an evidence-backed map of Tempo's attack surface, prioritizing paths that a sophisticated financially motivated operator could convert into theft: trusted-access abuse, developer and release compromise, third-party compromise, deceptive authorization, privileged asset control, and software-supply-chain compromise.
 
 This is initially an external, public-information review. A repository, deployed contract, or network behavior is not considered audited until its exact version or deployment is pinned and the relevant analysis phase is completed.
+
+`THREAT_MODEL.md` defines the Lazarus-style theft lens. It is a prioritization model, not an attribution exercise. Damage-only outcomes are secondary unless they enable theft, concealment, coercive recovery, or compromise of a higher-value boundary.
 
 ## System model
 
@@ -23,13 +25,13 @@ Tempo is an EVM-compatible, payments-focused Layer 1 built with the Reth SDK. Th
 
 | Area | Representative assets | Primary security questions |
 | --- | --- | --- |
-| Protocol implementation | `tempoxyz/tempo` | Consensus safety/liveness, execution correctness, state transitions, RPC/P2P exposure, upgrade activation |
+| Protocol implementation | `tempoxyz/tempo` | Execution or upgrade paths that can authorize, conceal, or amplify theft; source-to-deployment integrity |
 | Native payment primitives | TIP-20, TIP-403, rewards, fees, DEX | Unauthorized mint/freeze/transfer, policy bypass, accounting loss, order-book manipulation, fee-conversion failure |
 | Transaction authorization | Tempo transactions, account keychain, passkeys, sponsorship, nonce keys | Replay, signature-domain or parser ambiguity, privilege escalation, spending-limit bypass, sponsor griefing |
-| Network operations | mainnet `4217`, Moderato `42431`, validators, snapshots/releases | Validator-key lifecycle, DKG failure, equivocation protections, unsafe recovery, release provenance, availability |
+| Network operations | mainnet `4217`, Moderato `42431`, validators, snapshots/releases | Privileged operator access, validator/signing-key lifecycle, unsafe recovery, release provenance, theft-relevant finality failures |
 | User-facing applications | `tempo-apps`, `accounts`, wallet clients, explorer/faucet | Key/session compromise, malicious signing, origin confusion, transaction simulation/display mismatch |
 | Public data/API plane | RPC, WebSocket, indexer, contract verifier | Method exposure, inconsistent views, parser/resource exhaustion, verification confusion, trust-boundary failures |
-| Supply chain | GitHub Actions, packages, binaries, containers, SDKs | Maintainer/workflow compromise, dependency risk, artifact substitution, provenance gaps |
+| Supply chain | GitHub, maintainers, Actions, packages, binaries, containers, SDKs | Trusted contributor/workstation compromise, review or workflow bypass, dependency risk, artifact substitution, provenance gaps |
 
 ## Secondary scope
 
@@ -51,15 +53,26 @@ Third-party components are analyzed at the integration boundary. Their unrelated
 - scanning unrelated Stripe, Paradigm, validator, partner, or vendor infrastructure
 - claims about private infrastructure based only on vendor headers or DNS
 
+## Infrastructure discovery progression
+
+Infrastructure mapping proceeds in bounded stages:
+
+1. Passive discovery through official sources, repository references, certificate transparency, public DNS/passive-DNS datasets, package metadata, and search indexes.
+2. Read-only confirmation of discovered `tempo.xyz` hosts through authoritative DNS, TLS certificates, HTTP headers, documented public API calls, and low-frequency connection checks.
+3. A small, rate-limited DNS wordlist against `tempo.xyz`, only after wildcard detection and resolver controls are documented. No broad Internet scanning or partner-domain enumeration.
+4. Manual and passive-proxy web/API crawling of confirmed in-scope surfaces. Burp active scanning, intrusive checks, authentication testing, or state-changing requests require a separate explicit gate.
+
+Record discovery source, query time, resolution, certificate names, HTTP behavior, inferred owner/provider, and confidence. A subdomain's existence does not prove that it is Tempo-operated, production, or authorized for invasive testing.
+
 ## Priority threat outcomes
 
-1. Unauthorized movement, minting, freezing, or destruction of payment assets
-2. Forged, replayed, mis-scoped, or misleading user authorization
-3. Consensus safety failure, chain halt, invalid finality, or unsafe validator recovery
-4. DEX/internal-balance insolvency or fee-conversion/accounting failure
-5. Compliance-policy bypass or illegitimate policy administration
-6. Compromise of releases, wallets, web origins, packages, or deployment pipelines
-7. RPC/indexer/verifier inconsistencies that induce unsafe downstream decisions
+1. Unauthorized movement, minting, redemption, freezing, or durable control of payment assets
+2. Compromise of trusted humans, developer systems, source control, CI/CD, packages, releases, wallets, web origins, DNS, or deployment credentials that can be converted into theft
+3. Forged, replayed, over-broad, persistent, or misleading user/delegated authorization
+4. Compromise of a third party whose trusted access or data can redirect funds or sensitive authorization
+5. DEX/internal-balance insolvency, fee-conversion failure, reserve/bridge abuse, or accounting manipulation
+6. Compliance-policy or issuer-control abuse that enables seizure, redirection, laundering, or selective bypass
+7. Consensus, validator, RPC, indexer, or verifier failures when they enable theft, concealment, or unsafe recovery
 
 ## Scope gates still to resolve
 

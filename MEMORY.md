@@ -6,6 +6,7 @@ Curated, non-secret context for future work. Read the relevant linked notes rath
 
 - This repository is a defensive, public-information attack-surface analysis of Tempo, loosely modeled after `coinbase-analysis-2025`.
 - The first phase is passive recon, architecture mapping, source review, and local reproduction. Active production testing requires explicit authorization.
+- Research prioritizes theft paths associated with trusted access, developer/release compromise, third-party compromise, deceptive authorization, and privileged asset control. This is a behavioral lens, not attribution.
 - `SCOPE.md` defines boundaries; `TASKS.md` tracks work; `PROCESS.md` defines the analysis workflow.
 
 ## Verified snapshots

@@ -6,6 +6,7 @@
 - [x] Confirm the public mainnet chain ID through a read-only JSON-RPC call.
 - [x] Capture an initial public repository inventory.
 - [ ] Create an asset ledger with owner, environment, version, source, and last verification time.
+- [ ] Build a passive subdomain/service inventory and record confidence, ownership, DNS/TLS/HTTP evidence, and observation time.
 - [ ] Pin the mainnet release, chainspec, genesis, active protocol version, and native contracts.
 - [ ] Collect audit reports and map them to commits and deployments.
 
@@ -17,6 +18,8 @@
 - [ ] Trace DEX deposits, internal balances, orders, fills, swaps, fees, and withdrawals.
 - [ ] Map validator admission, DKG, signing-share storage, rotation, recovery, and protocol upgrades.
 - [ ] Map build, signing, package, container, and deployment pipelines.
+- [ ] Map human and third-party trust: maintainers, reviewers, release operators, issuer/policy administrators, validators, support/recovery roles, and critical vendors.
+- [ ] For each privileged boundary, document the plausible conversion path from compromise to movable value.
 
 ## 3. Reproducible local baselines
 
@@ -34,9 +37,19 @@
 - [ ] Review RPC/P2P resource limits and cross-layer consistency without testing production load.
 - [ ] Review wallet/app origin, session, passkey, signing, simulation, and display boundaries.
 - [ ] Review release and deployment supply chains.
+- [ ] Review third-party integration failure and compromise paths at Tempo-controlled boundaries.
+- [ ] Prioritize issues with a plausible theft, persistent access, authorization, or concealment outcome over damage-only weaknesses.
 - [ ] Add focused static analysis, fuzzing, property tests, and differential tests.
 
-## 5. Validation and reporting
+## 5. Bounded infrastructure and application mapping
+
+- [ ] Start with certificate transparency, public DNS sources, repository/config references, and search indexes.
+- [ ] Confirm candidate `tempo.xyz` hosts with low-frequency DNS, TLS, and HTTP observations; detect wildcards before wordlist enumeration.
+- [ ] Keep any DNS wordlist small, rate-limited, logged, and restricted to `tempo.xyz`.
+- [ ] Map confirmed web/API surfaces with ordinary browser behavior and passive proxy capture first.
+- [ ] Require a separate explicit authorization gate before Burp active scanning, intrusive payloads, authentication testing, or state-changing requests.
+
+## 6. Validation and reporting
 
 - [ ] Reproduce suspected issues locally at an exact commit.
 - [ ] Distinguish specification ambiguity, implementation defect, deployment mismatch, and operational risk.
