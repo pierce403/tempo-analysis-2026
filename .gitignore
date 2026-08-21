@@ -3,6 +3,7 @@ target/
 /logs/
 artifacts/
 tmp/
+/findings/
 
 # Local configuration and secrets
 .env

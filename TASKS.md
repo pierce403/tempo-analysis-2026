@@ -4,13 +4,18 @@ This is the authoritative queue for bounded research work. Detailed chronology b
 
 ## Active
 
-None.
+### T-002 — Pin the mainnet protocol baseline
 
-## Queued
+- **State**: active
+- **Outcome**: Identify the exact mainnet release, commit, chainspec, genesis, active hardfork/TIP set, and native contract deployments.
+- **Evidence required**:
+  - [ ] Sources are primary and dated.
+  - [ ] Release/source/deployment relationships are explicit.
+  - [ ] Unresolved mismatches are recorded rather than inferred away.
 
 ### T-005 — Build the theft-focused trust and adversary map
 
-- **State**: queued
+- **State**: active
 - **Outcome**: Map trusted humans, developer/release systems, third parties, privileged on-chain roles, and their plausible conversion paths to movable value.
 - **Evidence required**:
   - [ ] Every path identifies foothold, authority crossed, theft target, constraints, detection opportunities, and evidence confidence.
@@ -19,21 +24,14 @@ None.
 
 ### T-006 — Inventory Tempo's public infrastructure
 
-- **State**: queued
+- **State**: active
 - **Outcome**: Build a dated inventory of public `tempo.xyz` hosts and services using passive sources followed by bounded read-only confirmation.
 - **Evidence required**:
   - [ ] Passive sources, DNS answers, certificate names, HTTP behavior, provider inference, and ownership confidence are recorded.
   - [ ] Wildcard behavior is tested before any small rate-limited DNS wordlist.
   - [ ] No unrelated partner domains, intrusive requests, authentication testing, or state changes are included.
 
-### T-002 — Pin the mainnet protocol baseline
-
-- **State**: queued
-- **Outcome**: Identify the exact mainnet release, commit, chainspec, genesis, active hardfork/TIP set, and native contract deployments.
-- **Evidence required**:
-  - [ ] Sources are primary and dated.
-  - [ ] Release/source/deployment relationships are explicit.
-  - [ ] Unresolved mismatches are recorded rather than inferred away.
+## Queued
 
 ### T-003 — Classify the public repository inventory
 
@@ -57,6 +55,16 @@ None.
 None.
 
 ## Complete
+
+### T-007 — Validate private disclosure candidates
+
+- **State**: complete
+- **Outcome**: Triage the first protocol, supply-chain, and infrastructure candidates into evidence-backed private reports without touching production state.
+- **Evidence required**:
+  - [x] Each retained candidate is pinned to exact source or dated live evidence.
+  - [x] Reproducible mechanisms use local dummy data only.
+  - [x] Public prior art and material impact constraints are recorded.
+  - [x] Disclosure-sensitive details remain outside committed task logs and memory.
 
 ### T-001 — Establish the repository operating system
 
