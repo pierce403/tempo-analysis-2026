@@ -56,6 +56,16 @@ None.
 
 ## Complete
 
+### T-008 — Audit PR trust paths and contract test coverage
+
+- **State**: complete
+- **Outcome**: Identify theft-relevant GitHub/PR automation boundaries and execute the complete available test suites for the highest-value public smart-contract systems at pinned revisions.
+- **Evidence required**:
+  - [x] Workflow conclusions distinguish fork, same-repository writer, member, bot, environment, runner, and secret prerequisites.
+  - [x] Retained candidates are tied to immutable source and dummy/local reproduction only.
+  - [x] Full-suite commands and results are recorded, with toolchain/environment failures separated from product failures.
+  - [x] Public novelty checks and material impact constraints are explicit.
+
 ### T-007 — Validate private disclosure candidates
 
 - **State**: complete
