@@ -10,6 +10,8 @@ Initial passive recon and scope definition began on 2026-08-21. No vulnerability
 
 Start with:
 
+- [SURFACE.md](SURFACE.md) — current organizational attack-surface map
+- [FINDINGS.md](FINDINGS.md) — continuously maintained, redacted findings register
 - [SCOPE.md](SCOPE.md) — boundaries, priorities, and open scope questions
 - [THREAT_MODEL.md](THREAT_MODEL.md) — theft-focused adversary and trust-boundary model
 - [PROCESS.md](PROCESS.md) — evidence and analysis workflow
@@ -18,6 +20,9 @@ Start with:
 - [MEMORY.md](MEMORY.md) — curated durable context
 - [SKILLS.md](SKILLS.md) — reusable procedure catalog
 - [recon/2026-08-21-initial-recon.md](recon/2026-08-21-initial-recon.md) — first public-source snapshot
+- [recon/2026-08-21-public-repositories.csv](recon/2026-08-21-public-repositories.csv) — pinned 68-repository manifest
+- [recon/2026-08-21-source-referenced-hosts.tsv](recon/2026-08-21-source-referenced-hosts.tsv) — classified source-only hostname leads
+- [recon/2026-08-21-public-repository-secret-scan.md](recon/2026-08-21-public-repository-secret-scan.md) — redacted full-history scan methodology and results
 
 ## Safety and disclosure
 

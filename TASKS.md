@@ -56,6 +56,17 @@ None.
 
 ## Complete
 
+### T-009 — Consolidate the current attack surface and scan public repository history
+
+- **State**: complete
+- **Outcome**: Maintain a root-level public attack-surface map and redacted findings register, backed by a complete pinned clone and non-verifying secret scan of every public `tempoxyz` repository.
+- **Evidence required**:
+  - [x] The current public repository set is enumerated from GitHub, completely cloned with history, and pinned to exact revisions.
+  - [x] Secret scanning covers every clone and reachable commit history without attempting to authenticate with candidate credentials; binary/archive exceptions are explicit.
+  - [x] Scanner candidates are manually triaged, values are never committed, and limitations are explicit.
+  - [x] `SURFACE.md` distinguishes confirmed assets, trust boundaries, unknowns, and observation dates.
+  - [x] `FINDINGS.md` uses stable identifiers, confidence/status, realistic criminal-abuse paths, prerequisites, evidence, and remediation without publishing exploit-ready details.
+
 ### T-008 — Audit PR trust paths and contract test coverage
 
 - **State**: complete

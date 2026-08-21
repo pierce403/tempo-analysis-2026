@@ -47,6 +47,24 @@ Use these states:
 - **Evidence**: `recon/2026-08-21-contract-test-baseline.md`
 - **Graduation**: Promote into the contract-review procedure after it recurs in another contract system.
 
+### L-005 — Separate secret-scan evidence from the tracked finding index
+
+- **State**: proposed
+- **Tags**: `#secret-scanning` `#evidence` `#disclosure`
+- **Observed**: 2026-08-21 during T-009 public-history scanning.
+- **Lesson**: Keep raw scanner output and candidate values in an ignored evidence directory. Commit only pinned scope, aggregate counts, detector/file/commit context, manual classifications, limitations, and redacted findings; never authenticate a candidate merely to improve confidence.
+- **Evidence**: `recon/2026-08-21-public-repository-secret-scan.md`
+- **Graduation**: Promote into a repository-history scanning skill after the procedure is reused or explicitly approved.
+
+### L-006 — Preserve decoder failures as coverage exceptions
+
+- **State**: proposed
+- **Tags**: `#secret-scanning` `#coverage`
+- **Observed**: 2026-08-21 during T-009 full-history scanning.
+- **Lesson**: A scanner's final summary is not proof that every blob was decoded. Capture file-level errors, rerun a deterministic text-focused pass when binary/archive handling stalls, and report the excluded blob classes separately from Git-history coverage.
+- **Evidence**: `recon/2026-08-21-public-repository-secret-scan.md`
+- **Graduation**: Promote into a repository-history scanning skill after the same failure mode recurs.
+
 ## Active
 
 None.
