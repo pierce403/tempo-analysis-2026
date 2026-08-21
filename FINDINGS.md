@@ -1,6 +1,6 @@
 # Findings Register
 
-Last updated: **2026-08-21 16:58 UTC** \
+Last updated: **2026-08-21 19:01 UTC** \
 Visibility: tracked, redacted index; detailed candidate reports remain ignored under `findings/`
 
 ## Purpose and handling
@@ -26,6 +26,7 @@ No external disclosure, GitHub issue, PR, workflow trigger, credential test, clo
 | C-006 | P1 | Release tags bypass protected-branch review | Source/config validated; legitimate release paths observed | Could publish official signed node/container artifacts from unreviewed code | Confirm private tag controls and downstream consumers |
 | C-008 | P1 | Wallet PR automation reaches release trust root | Dummy-local mechanism; release capability historically observed | Could publish a trusted wallet update that steals or misuses local access keys | Confirm current secret placement and trigger semantics; disclose with C-006 |
 | C-003 | P1 | Scoped key can spend pre-existing ZonePortal allowance beyond its limit | Protocol primitive locally reproduced; deployment/user intent unresolved | A compromised delegated key could move more TIP-20 value than the displayed key budget | Confirm deployed portal state and intended wallet security model |
+| C-009 | P1 investigation | Wallet CLI masks default unrestricted key authority | Output mismatch locally reproduced; current release/schema and public UI observed | A stolen CLI key retains unrestricted calls and may retain full spending while audit output says zero/empty | Confirm hosted limit policy and affected-key population; preserve optional semantics |
 | C-004 | P2 | Accounts PR code reaches Cloudflare credential | Dummy-local mechanism; member-preview route observed | Could alter an auth/account Worker if the token reaches production resources | Establish token scope and production relationship |
 | C-001 | P2 | Historical `auth.tempo.xyz` deployment anomaly | Live historical observation; current functional site restored | A hostile controller of a trusted auth origin could solicit deceptive wallet authorization | Confirm Vercel/DNS ownership and audit history |
 | C-007 | P3 | `tempo-std` authorization RLP mismatch | Locally reproduced correctness issue | Expected rejection/DoS or integration failure, not an authorization bypass | Identify a production consumer and add cross-language vectors |
@@ -196,6 +197,40 @@ Wallets should calculate and display effective contract allowance as delegated r
 
 Detailed local report: `findings/C-003-zone-portal-access-key-limit-composition.md`.
 
+## C-009 — Wallet CLI masks the authority of its default unrestricted access key
+
+- **Family:** delegated wallet authorization / misleading security telemetry
+- **Priority and rating:** P1 investigation; Medium severity, potentially High financial consequence after local-key compromise
+- **Assessment state:** locally validated candidate; reference flow reachable
+- **Deployment state:** current release, protocol, hosted client schema, and read-only public UI assets observed; private server limit policy unknown
+- **Disclosure state:** needs private policy/affected-key confirmation; not sent
+- **Affected assets:** wallet-cli `677e52278eaafa4ec356ed9c750446fba320cdfa`, Accounts 0.16.0 `ce4d2c1e981d443deecd2193d65cdea610478ea6`, and Tempo `86ff4deaebfee38bb0b000e648b2b367810265ff`
+- **Evidence:** pinned cross-repository semantics, upstream localnet vectors, focused wallet-output regression, and passive inspection of current public approval assets
+
+### Confirmed mechanism
+
+Wallet CLI v0.7.0 requests a 30-day access key with only an expiry. The current CLI-auth schema has no call-scope field, so the resulting key is unrestricted for contract calls. In the reference policy, omitted token limits also produce unlimited spending; a private hosted policy could still inject a finite limit. Tempo's protocol explicitly distinguishes omitted limits/scopes (unlimited/unrestricted) from explicit empty collections (deny all).
+
+The CLI later destroys that distinction: absent limits normalize to `[]`, and `whoami`/`keys` report `unlimited: false`, `limit: "0.000000"`, no spending limits, and empty scopes. The same key remains payment-capable. A focused test reproduced the false output; the Accounts 0.16.0 localnet suite already demonstrates that an expiry-only extractable P-256 key can transfer before and after filesystem persistence. Current public wallet assets correctly render the omitted limit as `Spend — Unlimited`, so the approval screen itself is not hidden or deceptive.
+
+### How a criminal could use it
+
+After compromising a workstation, dependency, insider, or trusted wallet update, a criminal could steal the CLI's locally persisted access-key material and use its actual on-chain transfer, approval, and contract-call authority during the remaining authorization window. A victim, agent, or responder relying on the documented CLI inventory could see zero spending and empty scopes, underestimate the loss ceiling, and delay revocation. Under an unrestricted/unlimited issuance, the ceiling is the root account's accessible value rather than the displayed zero.
+
+### Preconditions and limits
+
+- The user explicitly approves the key, and the current browser UI visibly labels a missing limit as Unlimited.
+- The output mismatch does not provide initial access; theft requires later compromise or misuse of local key material.
+- Keys expire after approximately 30 days by default and are non-admin; balance, allowances, revocation, and detection bound loss.
+- Tempo's private hosted policy may inject a finite token limit. No device code, authorization, key, balance, or production transaction was created or queried.
+- Accounts documentation already warns that unbounded keys are too broad for safe production use. Public searches found no exact report of wallet-cli's expiry-only default plus its false zero/empty audit representation, but private awareness is unknown.
+
+### Detection and remediation
+
+Inventory and, where appropriate, revoke/reissue CLI-created keys with `enforceLimits=false` or `allowAnyCalls=true`. Correlate their creation with wallet-cli versions and review subsequent transfers, approvals, and contract calls. Change the default request to a bounded token/period and narrow call scopes; make unrestricted authority an explicit escalation. Preserve omitted, explicit-empty, and populated states in storage and output, cross-check canonical on-chain metadata, and add end-to-end request-to-display tests for all three states.
+
+Detailed local report: `findings/C-009-wallet-cli-unrestricted-key-misreport.md`.
+
 ## C-004 — Accounts PR code reaches a Cloudflare deployment credential
 
 - **Family:** privileged CI / account-service cloud credential
@@ -333,4 +368,4 @@ For every material research pass:
 
 ## Current disclosure order
 
-The first owner-side hygiene check is OBS-002 because revocation is low-cost and does not require testing the public value. Subject to final owner/scope checks, the recommended vulnerability-discussion order is C-005, C-002, a coordinated C-006/C-008 release review, C-003, then C-004. C-001 is an urgent ownership/audit-history question rather than a current takeover claim. C-007 is a lower-priority correctness report.
+The first owner-side hygiene check is OBS-002 because revocation is low-cost and does not require testing the public value. Subject to final owner/scope checks, the recommended vulnerability-discussion order is C-005, C-002, a coordinated C-006/C-008 release review, C-003, C-009, then C-004. C-009's first question is a low-risk owner-side check of the hosted limit policy and affected-key population; no live authorization is needed. C-001 is an urgent ownership/audit-history question rather than a current takeover claim. C-007 is a lower-priority correctness report.

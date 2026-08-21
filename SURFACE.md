@@ -1,6 +1,6 @@
 # Tempo Organizational Attack Surface
 
-Snapshot time: **2026-08-21 16:58 UTC** \
+Snapshot time: **2026-08-21 19:01 UTC** \
 Scope: Tempo-controlled public systems and public integration boundaries \
 Perspective: external, read-only, public-information review
 
@@ -43,7 +43,7 @@ flowchart LR
 
 | Asset or authority | Why it matters | Plausible conversion to theft | Publicly visible controls or evidence |
 | --- | --- | --- | --- |
-| User root keys, passkeys, and wallet access keys | Authorize transfers, approvals, scoped calls, and persistent delegated authority | Compromise a trusted wallet/auth origin or signed client, then obtain or misuse authorization | Accounts SDK, Tempo Auth, wallet CLI, Ledger app, Account Keychain source |
+| User root keys, passkeys, and wallet access keys | Authorize transfers, approvals, scoped calls, and persistent delegated authority | Compromise a trusted wallet/auth origin, endpoint, dependency, or signed client, then obtain or misuse authorization; misleading key inventory can delay revocation | Accounts SDK, Tempo Auth, wallet CLI, Ledger app, Account Keychain source, and C-009 |
 | TIP-20 issuer and TIP-403 policy roles | Can mint, burn, freeze, pause, or govern compliance depending on the role | Abuse a compromised administrative key to create, seize, redirect, or selectively permit value | Native-contract source and protocol specifications; deployed role ownership is not yet pinned |
 | DEX and fee-conversion balances | Hold internal balances and determine exchange/fee settlement | Exploit accounting, privileged configuration, or price/liquidity assumptions to withdraw or redirect value | Native precompile source and green component test suites |
 | Zone portal deposits and allowances | Move assets from Tempo into Zone escrow and confidential recipients | Use delegated contract authority or stale allowance in a way broader than the user expects | `zones`, Tempo Account Keychain, and private candidate C-003 |
@@ -177,6 +177,8 @@ Important ambiguity and compromise boundaries are WebAuthn origin/RP binding, em
 
 `auth.tempo.xyz` is especially sensitive because it currently serves a Tempo Auth application whose route manifest includes transaction signing and access-key authorization/revocation operations. `accounts.tempo.xyz` supplies SDK documentation and integration guidance. The wallet CLI keeps delegated private signing material locally and is extended/updated through Tempo's launcher. A compromise of any one frontend, SDK, release channel, RPC view, or sponsor does not automatically imply key theft, but the composition determines what the user actually sees and signs.
 
+The current wallet-cli v0.7.0 requests a 30-day key with no call scopes and no requested token limits. The pinned and deployed CLI-auth schemas cannot add call scopes; Tempo's private hosted policy could still inject a finite token limit. The public approval UI correctly displays an omitted limit as Unlimited, but the CLI's later `whoami`/`keys` output flattens omitted and explicit-empty policy states and reports the default key as zero-spend and empty-scoped. C-009 records the resulting incident-response risk: an extractable local key can have substantially broader canonical authority than the CLI inventory says. No production device code or key was created to resolve the private-policy question.
+
 ## Public web, API, and data plane
 
 One ordinary unfollowed HTTPS request was made to each source-documented host below at approximately 16:15 UTC. Status proves only that a route answered; it does not establish ownership, source-to-deployment identity, origin security, or permission for intrusive testing.
@@ -186,7 +188,7 @@ One ordinary unfollowed HTTPS request was made to each source-documented host be
 | `tempo.xyz` | `200` HTML | Canonical brand, documentation entry, installers and social trust |
 | `accounts.tempo.xyz` | `200` Markdown | Accounts SDK documentation and integration guidance |
 | `auth.tempo.xyz` | `200` HTML, title `Tempo Auth`, Vercel | Wallet signing and access-key dialog origin; see C-001 timeline |
-| `wallet.tempo.xyz` | `200` HTML | Wallet product/distribution entry |
+| `wallet.tempo.xyz` | `200` HTML; CLI-auth public assets inspected read-only | Wallet product, device-code approval, key-permission display, and distribution entry; see C-009 |
 | `keys.tempo.xyz` | `404` at `/` | WebAuthn/key-manager Worker; root response is not a health verdict |
 | `sponsor.tempo.xyz` | `400` JSON at `/` | Mainnet transaction sponsorship/fee-payer API |
 | `explore.tempo.xyz` | `200` HTML | Explorer, transaction display, wallet links and chain interpretation |
@@ -235,6 +237,7 @@ Users and applications may rely on different views from the node RPC, `tidx`, Ex
 | Compromised repository writer, App, or deploy key | Unprotected release tag into artifact workflows | Publish official signed/mutable node or container artifacts | Node operators, infrastructure credentials, downstream services and user funds | C-006 |
 | Compromised release workflow/cloud account | Signing plus R2/update metadata | Publish a wallet extension accepted by the Tempo launcher | Locally stored delegated wallet keys and their permitted balances | C-008 |
 | Compromised delegated key | Scoped call into a contract with pre-existing root allowance | Spend through the contract outside the key's presented token limit | Root-account TIP-20 allowance and Zone-directed funds | C-003; deployment/user intent unresolved |
+| Compromised CLI host, dependency, insider, or wallet update | Extractable 30-day local access key plus misleading local authority inventory | Use unrestricted calls and any effective token authority while `whoami`/`keys` reports zero/empty | Root-account balances, approvals, and contract-accessible value | C-009; hosted token-limit policy unresolved |
 | Compromised Vercel/DNS project | Trusted authentication origin | Serve deceptive signing/auth flows or abuse an allowlisted origin | User credentials or authorization | C-001 historical anomaly; current site restored and ownership unresolved |
 | Compromised issuer/policy/validator operator | On-chain or consensus administrative authority | Mint, freeze, redirect, admit, recover, or conceal depending on role | System or issuer-level payment assets | Privileged-by-design surface; deployed controls not yet pinned |
 | Compromised RPC/indexer/verifier/token metadata service | User/application data trust | Present a misleading transaction, asset, source, confirmation, or settlement view | User authorizations and merchant/reconciliation credit | Threat hypothesis; no validated finding yet |
@@ -247,7 +250,7 @@ The most useful defensive telemetry would correlate:
 - GitHub membership/role/App/deploy-key changes, same-repository PR creation, environment approvals, OIDC claims, secret reads, runner identity, tag creation, package/release publication, and audit-log export;
 - Cloudflare/Vercel/DNS project changes, token use, Worker/R2 deployments, custom-domain bindings, route changes, and origin/certificate history;
 - signing-key use, artifact hashes, provenance subjects, R2 object versioning, container tag movement, package-owner changes, and client update uptake;
-- privileged on-chain role changes, new access keys/allowances, sponsor behavior, unusually broad batches, issuer/policy actions, DEX/Zone withdrawals, validator/DKG changes, and incident-recovery events;
+- privileged on-chain role changes, new access keys/allowances, keys with `enforceLimits=false` or `allowAnyCalls=true`, discrepancies between canonical key metadata and wallet inventory, sponsor behavior, unusually broad batches, issuer/policy actions, DEX/Zone withdrawals, validator/DKG changes, and incident-recovery events;
 - cross-view disagreement among RPC, indexer, explorer, verifier, token list, wallet, reserve, and settlement systems.
 
 Recovery must assume a compromised identity may have created a second foothold. Rotating one token is insufficient if the attacker also changed a GitHub App, environment, OIDC policy, DNS project, package owner, signing key, update manifest, delegated on-chain key, or cloud service secret.

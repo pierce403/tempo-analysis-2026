@@ -56,6 +56,17 @@ None.
 
 ## Complete
 
+### T-010 — Find and validate another high-impact theft-relevant bug
+
+- **State**: complete
+- **Outcome**: Identified C-009, a cross-repository wallet-authorization candidate in which the released CLI requests a 30-day unrestricted key but later reports omitted authority as zero-spend and empty-scoped. The output mismatch is locally reproduced; unrestricted call reachability is pinned to the current hosted schema; the private server's token-limit policy remains an explicit owner-confirmation gate.
+- **Evidence required**:
+  - [x] The affected repository, revision, invariant, and trust boundary are pinned exactly.
+  - [x] The mechanism is reproduced locally with dummy state or rejected with a recorded falsification result; production state is not touched.
+  - [x] Realistic theft impact, required privileges, deployed relevance, detection opportunities, and limiting conditions are explicit.
+  - [x] Public prior art and adjacent tests are checked before novelty is claimed.
+  - [x] Disclosure-sensitive details remain ignored while the tracked register contains only a redacted assessment.
+
 ### T-009 — Consolidate the current attack surface and scan public repository history
 
 - **State**: complete
