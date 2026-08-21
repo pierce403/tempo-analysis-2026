@@ -1,6 +1,6 @@
 # Findings Register
 
-Last updated: **2026-08-21 16:48 UTC** \
+Last updated: **2026-08-21 16:58 UTC** \
 Visibility: tracked, redacted index; detailed candidate reports remain ignored under `findings/`
 
 ## Purpose and handling
@@ -29,7 +29,8 @@ No external disclosure, GitHub issue, PR, workflow trigger, credential test, clo
 | C-004 | P2 | Accounts PR code reaches Cloudflare credential | Dummy-local mechanism; member-preview route observed | Could alter an auth/account Worker if the token reaches production resources | Establish token scope and production relationship |
 | C-001 | P2 | Historical `auth.tempo.xyz` deployment anomaly | Live historical observation; current functional site restored | A hostile controller of a trusted auth origin could solicit deceptive wallet authorization | Confirm Vercel/DNS ownership and audit history |
 | C-007 | P3 | `tempo-std` authorization RLP mismatch | Locally reproduced correctness issue | Expected rejection/DoS or integration failure, not an authorization bypass | Identify a production consumer and add cross-language vectors |
-| OBS-001 | Closed observation | Removed `changelogs/bot/.env` | Historical scanner/source observation; absent from current default branch | A still-valid repository credential could enable source or automation abuse; no validity or scope established | Confirm revocation and audit the public-exposure interval internally |
+| OBS-002 | P2 investigation | Grafana credential-shaped value in public Tempo branch | Public non-default branch head confirmed; validity/scope untested | Could expose or poison profiling telemetry and weaken detection; no direct fund authority established | Revoke/rotate owner-side, inspect scope and audit logs, remove from public refs |
+| OBS-001 | Known observation | Removed `changelogs/bot/.env` | Absent from default branch but present at 18 non-default branch heads; public PR says not live | A still-valid repository credential could enable source or automation abuse; no validity or scope established | Confirm revocation and audit the public-exposure interval internally |
 
 ## Systemic pattern: unreviewed code and privileged CI
 
@@ -270,16 +271,16 @@ Detailed local report: `findings/C-007-tempo-std-key-authorization-encoding.md`.
 ## OBS-001 — Historical credential file removed from `changelogs`
 
 - **Family:** repository-history credential hygiene
-- **Priority and rating:** known/closed historical observation; current severity not established
+- **Priority and rating:** known historical observation; likely revoked per public owner statement, but current severity is not independently established
 - **Assessment state:** high-signal historical context, not a validated live secret
-- **Deployment state:** history-only; `bot/.env` is absent from the current `master` tree
+- **Deployment state:** absent from `master`, but still present at 18 public non-default branch heads in the 2026-08-21 mirror
 - **Disclosure state:** publicly acknowledged by the removal PR; internal revocation/audit confirmation remains appropriate
 - **Affected asset:** `tempoxyz/changelogs` commit `38a9f721c2c68726a38ddf38ba7d5606e61a8528`
 - **Evidence:** one unverified GitHub-detector record at `bot/.env:1`, path history, removal merge `79c502c94ab76cf8153d6a3bc22d02ae03850d3f`, and public PR #115
 
 ### Observation and owner context
 
-The history contains a committed environment file declaring a GitHub credential and an external AI-service credential. The file was removed on 2026-05-02 by [PR #115, “Delete bot/.env”](https://github.com/tempoxyz/changelogs/pull/115); the PR says the secrets were not live. Values, exact shapes, and hashes are omitted, and neither credential was tested.
+The history contains a committed environment file declaring a GitHub credential and an external AI-service credential. The file was removed from `master` on 2026-05-02 by [PR #115, “Delete bot/.env”](https://github.com/tempoxyz/changelogs/pull/115); the PR says the secrets were not live. The snapshot still finds that file at 18 non-default branch heads. Values, exact shapes, and hashes are omitted, and neither credential was tested.
 
 ### How a criminal could use it
 
@@ -289,11 +290,33 @@ If a historical repository credential were still valid and sufficiently scoped, 
 
 Confirm revocation or rotation through the owning providers, then review GitHub and service audit logs for the public-exposure interval and for any secondary credentials created through the same identity. Enable push protection and history-aware scanning. Do not authenticate the historical values merely to prove closure.
 
+## OBS-002 — Grafana Cloud credential-shaped value in a public Tempo branch
+
+- **Family:** repository credential hygiene / observability integrity
+- **Priority and rating:** P2 investigation; Medium if valid with telemetry read/write scope
+- **Assessment state:** unverified credential-shaped source observation
+- **Deployment state:** public non-default branch `zygis/pprof`; absent from `main`
+- **Disclosure state:** ready for private owner-side revocation/scope confirmation; not sent
+- **Affected asset:** `tempoxyz/tempo` branch head `e6cd619cee885d081d2d1a41b2a6ff390e593484`
+- **Evidence:** TruffleHog `Grafana` detector at `bin/tempo/src/main.rs:43`, redacted source-context review, local-ref containment, and GitHub API confirmation at `2026-08-21T16:58:08Z`
+
+### Observation
+
+The branch hardcodes basic-auth material for a Tempo node profiling agent that sends to a Grafana Cloud Pyroscope endpoint. GitHub reported the public branch at the pinned commit and as unprotected. The credential value is omitted and was not sent to Grafana; validity, permissions, owner, rotation state, and whether the experiment ever ran are unknown.
+
+### How a criminal could use it
+
+If still valid, a criminal could exercise whatever profiling authority it grants: potentially reading operational profile data, injecting or corrupting profiles, exhausting quota, or degrading the monitoring signal used during an intrusion. That could aid reconnaissance or concealment, but no deployment, fund-signing, cloud-administration, or source-control authority is established from the public evidence.
+
+### Detection and remediation
+
+Tempo should revoke or rotate the credential without testing the public value, inspect Grafana access-policy scope and audit logs from the 2025-08-23 commit onward, and determine whether the profiler sent production or test data. Remove the value from every public ref, move profiler authentication to an injected secret, add pre-receive/push protection for Grafana formats, and review adjacent experimental branches for copied credentials.
+
 ## Public-repository secret scan
 
-All 68 public repository mirrors completed canonical TruffleHog `3.97.0` full-history runs with provider verification disabled: 201,832 per-repository commit visits and 1,281 unverified match records. Raw values and JSON stay ignored under `target/secret-scan/`. Metadata triage found 293 current-path records, 967 history-only records, and 21 records without file metadata; path presence is not credential validity.
+All 68 public repository mirrors completed canonical TruffleHog `3.97.0` full-history runs with provider verification disabled: 201,832 per-repository commit visits and 1,281 unverified match records. Raw values and JSON stay ignored under `target/secret-scan/`. Triage found 132 exact detected sequences in current default content, 161 current paths with changed content, 967 deleted paths, and 21 records without file metadata; byte presence is not credential validity.
 
-No actionable current credential was established. OBS-001 is the only high-signal credential-shaped source context. The rest was classified as generated/vendor/upstream/test material, workflow expressions, public endpoints, local configuration, or detector collisions. Binary/archive exceptions and the lack of provider verification remain explicit limitations.
+No credential was confirmed live. Two contexts survived triage: the publicly acknowledged, likely revoked OBS-001 and the unverified public-branch OBS-002, which warrants owner-side revocation/scope confirmation. The rest was classified as generated/vendor/upstream/test material, workflow expressions, public endpoints, local configuration, or detector collisions. Binary/archive exceptions and the lack of provider verification remain explicit limitations.
 
 Final redacted results and limitations: [`recon/2026-08-21-public-repository-secret-scan.md`](recon/2026-08-21-public-repository-secret-scan.md).
 
@@ -310,4 +333,4 @@ For every material research pass:
 
 ## Current disclosure order
 
-Subject to final owner/scope checks, the recommended private discussion order is C-005, C-002, a coordinated C-006/C-008 release review, C-003, then C-004. C-001 is an urgent ownership/audit-history question rather than a current takeover claim. C-007 is a lower-priority correctness report.
+The first owner-side hygiene check is OBS-002 because revocation is low-cost and does not require testing the public value. Subject to final owner/scope checks, the recommended vulnerability-discussion order is C-005, C-002, a coordinated C-006/C-008 release review, C-003, then C-004. C-001 is an urgent ownership/audit-history question rather than a current takeover claim. C-007 is a lower-priority correctness report.

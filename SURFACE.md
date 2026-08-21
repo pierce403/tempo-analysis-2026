@@ -1,6 +1,6 @@
 # Tempo Organizational Attack Surface
 
-Snapshot time: **2026-08-21 16:48 UTC** \
+Snapshot time: **2026-08-21 16:58 UTC** \
 Scope: Tempo-controlled public systems and public integration boundaries \
 Perspective: external, read-only, public-information review
 
@@ -223,6 +223,7 @@ Users and applications may rely on different views from the node RPC, `tidx`, Ex
 | Bridge.xyz / Stripe | Bridge/card/reserve and wallet-backed payment integration | Customer, issuance, routing, KYC/card and reserve-related authority | Review only Tempo's integration boundary |
 | Privy and other wallet/auth providers | Sponsor/auth integrations referenced in source | Authentication or fee-payer trust depending on deployment | Do not enumerate provider tenants beyond public Tempo config |
 | Slack, Anthropic, AWS STS/OIDC | CI/release/support automation | Notifications, generated changelogs, temporary tokens and automation actions | Secret scopes and enterprise controls are unknown |
+| Grafana Cloud / Pyroscope | Experimental node profiling and observability | Profile telemetry, service quota, and monitoring integrity; see OBS-002 | Public branch source does not establish token validity or scope |
 | Reth, Commonware, Foundry, viem and language ecosystems | Upstream dependencies and forks | Consensus/execution/toolchain behavior and build inputs | Upstream projects are reviewed only where consumed by Tempo |
 | Ledger | Hardware-wallet application and review/distribution | Transaction display, signing semantics and app provenance | Ledger's unrelated internal systems are out of scope |
 
@@ -279,7 +280,7 @@ Recovery must assume a compromised identity may have created a second foothold. 
 
 All 68 public repository mirrors completed canonical TruffleHog `3.97.0` full-history runs with verification disabled. The scans covered 201,832 per-repository commit visits and emitted 1,281 unverified match records across 26 repositories; 42 emitted none. Candidate values and raw JSON remain under ignored `target/secret-scan/`; no credential was authenticated against a provider, and no value is copied into this document.
 
-Manual metadata and source-context triage did not establish an actionable current credential. The one high-signal historical environment file was removed from `changelogs`, and its public removal PR says the credentials were not live; it remains OBS-001 pending internal revocation/audit confirmation. Most match volume came from generated bundle reports, inherited toolchain histories, tests/examples, vendored dependencies, public endpoints, local configuration, and workflow secret expressions.
+Manual metadata and source-context triage did not establish a confirmed live credential, but it retained two owner-check observations. OBS-001 is a removed `changelogs` environment file whose public deletion PR says its credentials were not live, although the file remains at 18 non-default branch heads. OBS-002 is a Grafana Cloud credential-shaped value hardcoded in the public, unprotected Tempo branch `zygis/pprof`; the branch and exact head were confirmed at 16:58 UTC, but the value was not tested and its scope/revocation state is unknown. Most match volume came from generated bundle reports, inherited toolchain histories, tests/examples, vendored dependencies, public endpoints, local configuration, and workflow secret expressions.
 
 Twelve structured errors remain for malformed/compressed test or vendor artifacts. The canonical Tempo and Tempo Apps reruns covered text and Git history while intentionally skipping binary/archive content, so those blobs are an explicit coverage exception. Final totals, detector classes, triage, exact limitations, and defensive next steps are recorded in [`recon/2026-08-21-public-repository-secret-scan.md`](recon/2026-08-21-public-repository-secret-scan.md).
 

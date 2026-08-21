@@ -52,7 +52,7 @@ Use these states:
 - **State**: proposed
 - **Tags**: `#secret-scanning` `#evidence` `#disclosure`
 - **Observed**: 2026-08-21 during T-009 public-history scanning.
-- **Lesson**: Keep raw scanner output and candidate values in an ignored evidence directory. Commit only pinned scope, aggregate counts, detector/file/commit context, manual classifications, limitations, and redacted findings; never authenticate a candidate merely to improve confidence.
+- **Lesson**: Keep raw scanner output and candidate values in an ignored evidence directory. Commit only pinned scope, aggregate counts, detector/file/commit context, manual classifications, limitations, and redacted findings; never authenticate a candidate merely to improve confidence. Triage the default tree, live non-default branch heads, and unreachable/history-only commits separately because absence from the default branch is not removal from public refs.
 - **Evidence**: `recon/2026-08-21-public-repository-secret-scan.md`
 - **Graduation**: Promote into a repository-history scanning skill after the procedure is reused or explicitly approved.
 
