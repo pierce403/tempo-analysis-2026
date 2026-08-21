@@ -103,4 +103,3 @@ High priority means a plausible and evidence-backed conversion to theft. Severit
 - No fund movement, privilege changes, persistent production state, or exploit validation on mainnet.
 - Do not enumerate or test unrelated partner infrastructure.
 - Keep candidate vulnerability details private and follow the current disclosure policy.
-
