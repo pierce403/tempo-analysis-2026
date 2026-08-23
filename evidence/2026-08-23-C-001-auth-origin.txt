@@ -1,0 +1,60 @@
+Tempo analysis evidence: C-001 auth.tempo.xyz deployment timeline
+Refreshed: 2026-08-23T14:28Z
+Evidence type: historical and current live read-only observations
+Safety: ordinary unfollowed public HTTP/DNS only; no login, redirect following, OAuth,
+wallet action, credential entry, provider account query, or state change
+
+Why there is no executable exploit PoC
+--------------------------------------
+The behavior of concern was historical and disappeared on 2026-08-21. Recreating it would
+require control of Tempo's DNS or Vercel project and was neither available nor attempted. This
+record demonstrates the behavior timeline and current restoration; only Tempo/Vercel audit logs
+can determine whether the historical deployment was authorized.
+
+Public behavior timeline
+------------------------
+2026-07-13 15:00 UTC
+  Third-party public scanner record: Vercel HTTP 307, Location /rest.
+
+2026-08-14 18:51 UTC
+  Third-party public scanner record: Vercel HTTP 200, title "Tempo Auth".
+
+2026-08-21 13:40-13:43 UTC
+  Direct bounded observation: Vercel catch-all HTTP 307 with malformed relative Location
+  /https:/bugbountypoc.com. The same relative redirect was returned from an arbitrary path and
+  the OIDC discovery path. Because it was relative, following it would have remained on
+  auth.tempo.xyz; no external redirect or credential collection was demonstrated.
+
+2026-08-21 16:15 UTC
+  Direct bounded recheck: HTTP 200, server Vercel, title "Tempo Auth". Public route data named
+  transaction-signing and access-key authorize/revoke operations.
+
+2026-08-23 14:17-14:29 UTC refresh
+  DNS: auth.tempo.xyz CNAME 202ec7d1371e97e4.vercel-dns-016.com.
+  Addresses observed: 216.150.1.1 and 216.150.16.1.
+  Unfollowed GET /: final HTTP 200, server Vercel, title "Tempo Auth".
+  Bounded shared-edge TCP check: 80/tcp and 443/tcp open; 22/tcp and 8545/tcp filtered.
+
+Impact supported
+----------------
+auth.tempo.xyz is a valid HTTPS Tempo authentication/signing origin. A party with unauthorized
+control of its Vercel project or DNS binding could plausibly present a convincing authorization
+flow or benefit from an application allowlist that trusts the origin. The dated behavior changes
+justify an owner-side deployment/domain audit.
+
+Not demonstrated
+----------------
+- No evidence identifies the historical deployer or shows that any deployment was unauthorized.
+- No credential, wallet authorization, external redirect, cookie, OAuth allowlist, or user impact
+  was observed or tested.
+- The current application is functional; this is not a current takeover claim.
+- Vercel addresses and open ports describe shared provider edges, not a Tempo origin server.
+
+Required owner evidence
+-----------------------
+Confirm the DNS/Vercel project owner and review domain/deployment audit history from at least
+2026-07-13 through 2026-08-23. If every deployment was authorized, close the item as
+configuration/research noise. If not, preserve logs, reclaim the binding, and review visits plus
+OAuth/origin/CSP/CORS/cookie allowlists.
+
+Supporting transcript: evidence/2026-08-23-public-perimeter.txt

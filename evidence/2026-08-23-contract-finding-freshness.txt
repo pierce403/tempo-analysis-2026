@@ -1,0 +1,129 @@
+Tempo analysis evidence: C-003 and C-007 current-head freshness review
+Observed: 2026-08-23 (America/Los_Angeles)
+Evidence type: local Git object, ancestry, diff, source, and use-site inspection
+Safety: public repository mirrors only; no RPC, deployed contract, wallet, credential, or
+production state was queried or changed. This check did not submit a transaction or rerun a PoC.
+
+Default-branch revisions inspected
+----------------------------------
+tempoxyz/zones main:
+  7e38642cdd5a1500784fd15cf30eda5366f3350a
+tempoxyz/tempo main:
+  d656ef5581505b59f1611b358e611f5a602d399e
+tempoxyz/tempo-std master:
+  c77f1671f7fd01c698f1344c2a5f38f11a7f8384
+
+The earlier Zones revision acaa6a6734860ecd81d7f01de3c973b068dca2ac and earlier
+Tempo revisions 88b5d7720d29655fdf9025bb14ddcd6bba1f645c and
+86ff4deaebfee38bb0b000e648b2b367810265ff are all ancestors of the current inspected
+default-branch heads.
+
+C-003: ZonePortal allowance/access-key composition
+--------------------------------------------------
+Current-head conclusion: the source-level mechanism remains present. No mitigation was found in
+the relevant current source trees.
+
+Tempo changed by three commits between the locally executed PoC revision 86ff4dea and the current
+head d656ef5. The complete path diff contains only .github workflow and STS-policy files. The
+following relevant Git tree object IDs are identical at both revisions:
+
+  crates/revm/src                         db64e44d44c6e137577d5b421e5e1b3768013bcf
+  crates/precompiles/src                  21be5244a96b94f29fddfc45968b5d93f682ee51
+  crates/primitives/src/transaction       daca6f66e29e19da7e51bcce16cecfee2c31399e
+  crates/contracts/src                    6c11fe78495815db636d08341c4bbb80b94b4ace
+
+The individual C-003 source blobs are also identical at the original 88b5d77 assessment revision,
+the 86ff4de PoC revision, and current head d656ef5:
+
+  crates/revm/src/handler.rs              1b27e1bc58bcd35766a760bdc7e8e9eea280ba1f
+  crates/precompiles/src/tip20/mod.rs      4548b68e36242fd5513659b77d659b2608475dc3
+  tips/tip-1011.md                         395d63b5c88e64c1f275e153e9343e8ad217f85b
+  crates/contracts/src/zones.rs            d407322ebb0e2b83fa565180929eaabeb6f5a040
+
+Current Tempo source still has the same composition:
+
+- handler.rs:426-515 prevalidates each top-level call through target/selector scope checks;
+- tip-1011.md:338-350 specifies target, selector, and the narrow argument-zero recipient rule;
+- tip-1011.md:371-395 restricts recipient lists to three direct TIP-20 selectors and says generic
+  calldata predicates are not introduced; and
+- tip20/mod.rs:825-847 passes the caller as spender for transferFrom, while lines 1075-1092
+  consume allowance when spender is present and update the access-key spending limit only for a
+  direct transfer.
+
+Zones advanced by six commits from acaa6a6 to 7e38642. The relevant runtime and precompile trees
+are unchanged:
+
+  crates/contracts/src/runtime/tempo      18a38e526c919cee670af8256b84274273675400
+  crates/contracts/src/precompiles        b990a67c7c6f3507630c72c78f02dfb9a46f1b9a
+
+In particular, the current and prior ZonePortal source has the same Git blob:
+
+  crates/contracts/src/runtime/tempo/ZonePortal.sol
+                                            9d880888e9a9a571e489370b267f997da77e070b
+
+Current Zone source and documentation retain the prerequisites used by the focused PoC:
+
+- ZonePortal.sol:909-925 collects the full deposit amount with
+  transferFrom(msg.sender, address(this), amount);
+- ZonePortal.sol:951-1005 accepts an encrypted caller-selected recipient payload and checks the
+  Tempo depositor/refund recipient, not the encrypted Zone recipient;
+- specs/spec.md:133 explicitly states that decrypted Zone recipients need not be allowed Tempo
+  accounts; and
+- Justfile:79-89 still defines max-approve-portal using cast max-uint, and docs/ZONES.md continues
+  to instruct users to run it before deposits.
+
+Changes elsewhere in Zones add administration commands, tests, documentation, and interfaces but
+do not change the Portal runtime, Tempo TIP-20 allowance enforcement, call-scope semantics, or the
+maximum-approval helper. Access-mode membership still does not bind the encrypted Zone recipient.
+
+Applicability of existing evidence: evidence/2026-08-23-C-003-zone-allowance-poc.txt executed the
+focused in-memory test at 86ff4de. Because every tested Tempo source subtree is byte-for-byte the
+same at current head d656ef5, that execution remains directly applicable to the current public
+source mechanism. It still proves only the native scope/allowance/limit primitive; it does not
+prove a current deployed Portal, affected account allowance, wallet promise, or mainnet loss.
+
+C-007: tempo-std key-authorization RLP mismatch
+-----------------------------------------------
+Current-head conclusion: the mismatch remains present. tempo-std's default branch has not moved
+from the exact tested commit c77f1671f7fd01c698f1344c2a5f38f11a7f8384; its full tree object is
+987715fc6664e16bd758a6b6994c185737cf660a.
+
+The current TempoTransactionLib.sol blob is
+02872578cfeebc13567e05ad55374b1a71e109c3. It still accepts keyAuthorization as untyped bytes and
+applies TxRlp.encodeString(self.keyAuthorization) in all four paths:
+
+  unsigned encoding                       lines 239-242
+  signed encoding                         lines 278-281
+  user signing hash                       lines 331-333
+  fee-payer signing hash                  lines 368-370
+
+Tempo's canonical transaction source is also unchanged from the earlier 86ff4de comparison to
+current head d656ef5:
+
+  crates/primitives/src/transaction tree  daca6f66e29e19da7e51bcce16cecfee2c31399e
+  key_authorization.rs blob                80c182a1959a2f89034cce5c3dc5171166d7d057
+  tempo_transaction.rs blob                12ded3f4f2e9832949961d36181b339acf243fd7
+
+Current canonical source still derives list RLP for SignedKeyAuthorization
+(key_authorization.rs:411-433), inserts that value directly
+(tempo_transaction.rs:478-528), and recognizes the optional field only when the next RLP item is
+a list prefix (tempo_transaction.rs:623-639). The Solidity helper therefore still adds a string
+wrapper where the node expects a list.
+
+A current-head Git grep found withKeyAuthorization only at its tempo-std definition; neither the
+current Tempo nor Zones head calls that helper. Tempo does import TempoTransactionLib in three
+tips/verify test-harness files, but the affected optional method remains unused there. This leaves
+production consumer reach unestablished and does not increase the Low/Informational impact rating.
+
+Applicability of existing evidence: evidence/2026-08-23-C-007-tempo-std-rlp-poc.txt was executed
+at c77f167, which is still the exact tempo-std default-branch head. Its observed 82 c1 80 output
+therefore demonstrates current source behavior without extrapolation. The canonical Tempo decoder
+comparison is also byte-for-byte current. The evidence does not demonstrate node acceptance,
+authorization bypass, a production consumer, or fund loss.
+
+Overall disposition
+-------------------
+C-003 remains a current-source, locally reproduced design-composition candidate whose deployed
+and product-intent gates are unresolved. C-007 remains a current-source, locally reproduced
+correctness issue with rejection/test-integrity impact and no demonstrated theft path. Neither
+finding should be described as exploited, deployed, accepted by a live node, or unknown to Tempo.

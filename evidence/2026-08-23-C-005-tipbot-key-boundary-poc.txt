@@ -1,0 +1,81 @@
+Tempo analysis evidence: C-005 tip.bot preview secret boundary PoC
+Executed: 2026-08-23T14:19Z
+Evidence type: local dummy reproduction
+Safety: no GitHub, Cloudflare, Slack, Tempo, or other network request; no real credential
+
+Purpose
+-------
+Model the pinned action's package-manager command and JSON-stdin boundary and confirm that a
+repository-selected executable receives the mainnet-key-named environment value and bulk-secret
+payload used by the preview path.
+
+Public workflow/source evidence
+-------------------------------
+Current tempoxyz/tip.bot main (confirmed 2026-08-23):
+  e0a88f66bd7e1a6073b43f2cb6f3a5426d277318
+
+- .github/workflows/pull_request.yml lines 3-5 accepts PR opened/synchronize/reopened/
+  ready-for-review events. Lines 22-25 require a non-draft COLLABORATOR, MEMBER, or OWNER;
+  lines 31-44 pass the exact PR head plus Cloudflare, both fee-payer-key, application-state,
+  Slack, and Tempo API secret classes into the reusable preview workflow.
+- .github/workflows/preview_deploy.yml lines 73-97 enters environment preview, checks out the PR
+  head, and executes PR-head local setup actions. Lines 411-433 invoke pinned
+  cloudflare/wrangler-action@da0e0dfe58b7 (12-character commit abbreviation; the full pin is in
+  the referenced source) and name both fee-payer keys plus the other Worker secrets.
+- The pinned action's uploadSecrets path reads each named value from its environment, creates the
+  secret-bulk JSON, and provides it on stdin to packageManager.exec. A PR-controlled lockfile
+  selects pnpm, and an earlier PR-head local setup action can affect the later executable path.
+- Source use is financial: src/lib/tempo.ts lines 39-46 selects the mainnet private key;
+  src/chat.ts lines 4251-4271 sends ticket funds to the derived escrow identity, lines 4433-4448
+  invokes payout, lines 4479-4500 derives the escrow address, and lines 4693-4724 signs the token
+  transfer with that private key.
+
+Latest successful detailed environment evidence (2026-08-21):
+  preview protection_rules=[]
+  deployment_branch_policy=null
+  can_admins_bypass=true
+
+The August 23 environment-detail refresh was rate-limited, so a subsequent private/public control
+change remains possible.
+
+Public same-repository PR #79 / workflow run 32455547803 reached a successful Gate job
+96692472942 and Deploy job 96692494520. Public step metadata records successful Checkout, Setup
+pnpm, Setup Slack config token, Deploy preview, and Seed preview workspace. The deploy began two
+seconds after the gate ended in the dated no-reviewer snapshot. The pinned action rejects missing
+required secret values before upload, so the successful step proves configured nonempty values
+were processed; it does not establish key equality, funding, current rotation, or abuse.
+
+Command
+-------
+./target/supply-chain/repro-tipbot-mainnet-key/repro.sh
+
+Observed output
+---------------
+argv=exec wrangler secret bulk --env preview
+env_mainnet=DUMMY_FEE_PAYER_PRIVATE_KEY_MAINNET
+stdin={"FEE_PAYER_PRIVATE_KEY_MAINNET":"DUMMY_FEE_PAYER_PRIVATE_KEY_MAINNET",
+       "FEE_PAYER_PRIVATE_KEY_TESTNET":"DUMMY_FEE_PAYER_PRIVATE_KEY_TESTNET",
+       "SECRET_KEY":"DUMMY_SECRET_KEY",
+       "SLACK_CLIENT_ID":"DUMMY_SLACK_CLIENT_ID",
+       "SLACK_CLIENT_SECRET":"DUMMY_SLACK_CLIENT_SECRET",
+       "SLACK_SIGNING_SECRET":"DUMMY_SLACK_SIGNING_SECRET",
+       "TEMPO_API_KEY":"DUMMY_TEMPO_API_KEY"}
+
+Artifact hashes
+---------------
+5f74d04ee38dadf150e8487e920d3a2cbbe401bb081f0e5a8a094686f1ec6fff  repro.sh
+6cab83d84145a6dd5ee766367d69359149bf5355d7db711ac844061903ac10b0  fake-bin/pnpm
+75030dd74c6f1d84bcc08a5444553382bdfaefde8ccd4d8dec91ebaf433d5ff7  capture.txt
+
+Impact demonstrated
+-------------------
+The modeled repository-controlled package-manager process receives the complete preview secret
+payload, including the mainnet fee-payer-key-named value. Application source separately shows
+that this signing identity derives the raffle escrow address and signs payouts.
+
+Not demonstrated
+----------------
+- Every value above is a literal dummy string.
+- No live secret, key equality, balance, payout, PR, or workflow was tested.
+- Public evidence does not establish whether preview and production currently share the key or
+  whether it has rotated.

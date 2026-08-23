@@ -1,0 +1,479 @@
+TEMPO COMMUNICATIONS, WORKFORCE, IDENTITY, AND DEVOPS EXPOSURE
+Observation date: 2026-08-23
+Live observation window: 2026-08-23T14:20:09Z through 2026-08-23T14:25:55Z
+Method: passive public DNS, ordinary unauthenticated HTTPS GETs, public Git refs,
+and source inspection of the already mirrored public repositories
+
+SAFETY AND EVIDENCE BOUNDARY
+============================
+
+No account login, recovery, employee enumeration, workspace enumeration, email
+delivery, OAuth authorization, webhook invocation, token verification, or
+state-changing request was attempted. No employee names, email addresses,
+Slack member IDs, channel IDs, tenant IDs, verification challenges, API keys,
+DSNs, client tokens, cloud account numbers, or service-account names are copied
+into this record. Provider verification values and public telemetry identifiers
+are redacted even where they are ordinarily not secrets.
+
+This record distinguishes:
+
+* Confirmed public service: a current protocol record, live response, or current
+  first-party source directly identifies a provider or integration.
+* Domain-verified provider: a current DNS TXT record says the provider verified
+  control of tempo.xyz. This is evidence of a tenant/vendor relationship, but it
+  does not prove active seats, current use, privileges, SSO enforcement, or a
+  secure configuration.
+* Source-supported trust boundary: current public source contains a deployment,
+  secret name, callback, or integration. It may not match a private deployment.
+* Unknown: private tenant configuration, licensing, identity-provider routing,
+  MFA, device posture, token scopes, audit retention, and incident procedures.
+
+
+EXECUTIVE TRUST-BOUNDARY SUMMARY
+================================
+
+1. Google-hosted mail is confirmed by the complete Google MX set. SPF authorizes
+   Google and Mailgun. DMARC publishes reject policy for both the organizational
+   domain and subdomains and sends aggregate reports to DMARC Digests. No public
+   MTA-STS or SMTP TLS reporting record was observed. DKIM was not evaluated
+   because no selector was enumerated.
+
+2. Slack is both an internal operational channel and a customer-facing product
+   boundary in public source:
+   * core benchmark automation posts with a Slack bot token and maintains a
+     GitHub-to-Slack identity map (the map contents were deliberately excluded);
+   * the documentation site forwards user feedback to a Slack webhook after
+     applying source-level secret redaction;
+   * Tipbot is a Slack OAuth app deployed on Cloudflare, with message/channel/
+     group/user read scopes and chat-write authority described by its manifest;
+   * GitHub Actions can create/update/delete Tipbot preview Slack apps, while
+     production and preview workflows hold Slack configuration material.
+
+3. Tailscale use is strongly indicated, but an organization-wide VPN posture is
+   not externally provable. tempo.xyz has a current Tailscale verification TXT
+   record; TIDX documents Tailscale CGNAT space as an optional trusted CIDR for
+   administrative operations; Tipbot development accepts a Tailscale-derived
+   host; and the contract verifier permits *.ts.net origins. No public source
+   evidence of OpenVPN, WireGuard, ZeroTier, or a Cloudflare Access application
+   was retained. Cloudflare Dashboard SSO is separately indicated by DNS.
+
+4. Workforce/security SaaS domain verification records currently name Slack,
+   Rippling, Tailscale, 1Password, Jamf, SentinelOne, Linear, Figma, Zoom,
+   DocuSign, Attio, Zapier, Cursor, Sourcegraph Amp, OpenAI, Anthropic, Stripe,
+   Microsoft, Apple, Google, and Uber. These are provider-level attack-surface
+   leads, not proof of active accounts or privileged access.
+
+5. The high-leverage DevOps chain is GitHub Actions -> GitHub OIDC -> a GitHub
+   App STS on an external non-tempo.xyz host -> short-lived GitHub App tokens,
+   plus direct Cloudflare, Vercel, AWS, GCP, registry, and observability paths.
+   Current core source uses third-party Depot runners and OIDC cloud roles for
+   disposable multi-region benchmarks. A current release-automation change also
+   replaces stored GitHub App credentials with the STS model. Private STS
+   ownership, GitHub App governance, environment approvals, and cloud-side trust
+   policies remain owner-confirmation items.
+
+6. Better Stack is the confirmed public status/incident-page provider behind
+   status.tempo.xyz, with Cloudflare at the public edge. A report-only browser
+   endpoint included a Better Stack ingestion token in a response header; its
+   value is omitted and was not tested. The public source scan found no retained
+   first-party references to PagerDuty, Opsgenie, or incident.io.
+
+7. Public support intake is a GitHub Issues triage repository plus a role mailbox
+   described in the security policy. No public default-branch source evidence of
+   Zendesk, Intercom, Freshdesk, Help Scout, or Front was found. Private support
+   and incident tooling may still exist.
+
+8. Product identity is separate from workforce identity. Tempo Wallet exposes a
+   live OIDC issuer for verified-email identity tokens, and Accounts supports
+   Privy and app-owned adapters. This does not identify Tempo's workforce IdP.
+
+
+PINNED SOURCE REVISIONS
+=======================
+
+Command (local mirrors):
+
+  for repo in docs tempo tip.bot tempo-apps tidx gh-actions tempo-support \
+      accounts pathusd-reserves; do
+    printf '%s\t' "$repo"
+    git --git-dir="target/public-repos/$repo" rev-parse HEAD
+  done
+
+Read-only current-ref check at 2026-08-23T14:25:55Z:
+
+  for repo in docs tempo tip.bot tempo-apps tidx gh-actions tempo-support \
+      accounts pathusd-reserves; do
+    branch=$(git --git-dir="target/public-repos/$repo" symbolic-ref --short HEAD)
+    git ls-remote "https://github.com/tempoxyz/${repo}.git" "refs/heads/${branch}"
+  done
+
+Current public default-branch heads:
+
+  docs              df7543408bee42c7a52f3fafaaa7def644598cbe
+  tempo             d656ef5581505b59f1611b358e611f5a602d399e
+  tip.bot           e0a88f66bd7e1a6073b43f2cb6f3a5426d277318
+  tempo-apps        5374dff9f01d050be7b9ab8d8d37349cf9506c76
+  tidx              8b4511dd83fff7fc605602a1cc7cf1c245e9ecd2
+  gh-actions        dd1014bf8244fded7a501e701cafab240a4f9f0e
+  tempo-support     29b168a6be1966ee3affab332ce9ffbf4793dbaa
+  accounts          bff90b590894e074d2cd25e9ee9d5b197813ff33
+  pathusd-reserves  6ea927bb5f7b75c65859b18f307016fe290bf2df
+
+The local Tempo mirror was two commits behind. A temporary shallow checkout of
+the current d656ef5 head was used for current Tempo workflow conclusions; the
+pinned mirror was not rewritten.
+
+
+DNS: MAIL, DOMAIN CONTROL, AND WORKFORCE PROVIDERS
+=================================================
+
+Exact queries at 2026-08-23T14:20:09Z:
+
+  dig +time=3 +tries=1 +noall +answer tempo.xyz MX
+  dig +time=3 +tries=1 +noall +answer tempo.xyz TXT
+  dig +time=3 +tries=1 +noall +answer _dmarc.tempo.xyz TXT
+  dig +time=3 +tries=1 +noall +answer tempo.xyz NS
+  dig +time=3 +tries=1 +noall +answer tempo.xyz CAA
+
+Sanitized result:
+
+  MX  1  aspmx.l.google.com.
+  MX  5  alt1.aspmx.l.google.com.
+  MX  5  alt2.aspmx.l.google.com.
+  MX 10  alt3.aspmx.l.google.com.
+  MX 10  alt4.aspmx.l.google.com.
+
+  TXT "v=spf1 include:_spf.google.com include:mailgun.org ~all"
+  TXT "slack-domain-verification=[REDACTED]"
+  TXT "TAILSCALE-[REDACTED]"
+  TXT "cloudflare_dashboard_sso=[REDACTED]"
+  TXT "rippling-domain-verification=[REDACTED]"
+  TXT "1password-site-verification=[REDACTED]"
+  TXT "jamf-site-verification=[REDACTED]"
+  TXT "sentinelone-domain-verification=[REDACTED]"
+  TXT "linear-domain-verification=[REDACTED]"
+  TXT "figma-domain-verification=[REDACTED]"
+  TXT "ZOOM_verify_[REDACTED]"
+  TXT "docusign=[REDACTED]"
+  TXT "attio-domain-verification=[REDACTED]"
+  TXT "zapier-domain-verification-challenge=[REDACTED]"
+  TXT "cursor-domain-verification-[REDACTED]"
+  TXT "amp-by-sourcegraph-domain-verification-[REDACTED]"
+  TXT "openai-domain-verification=[REDACTED]"
+  TXT "anthropic-domain-verification-[REDACTED]"
+  TXT "stripe-verification=[REDACTED]"
+  TXT "MS=[REDACTED]"
+  TXT "apple-domain-verification=[REDACTED]"
+  TXT "google-site-verification=[REDACTED]" (three records)
+  TXT "uber-domain-verification=[REDACTED]"
+  TXT "mgverify=[REDACTED]"
+
+  _dmarc TXT "v=DMARC1; p=reject; sp=reject;
+               rua=mailto:[REDACTED DMARC REPORTING ADDRESS]"
+
+  NS kobe.ns.cloudflare.com.
+  NS ursula.ns.cloudflare.com.
+
+  CAA: no answer record observed.
+
+Interpretation:
+
+* Google Workspace/Gmail is confirmed for inbound email by MX, not merely by a
+  site-verification token. Mailgun is authorized to originate mail by SPF.
+* DMARC has an explicit reject policy; the aggregate-reporting provider is
+  DMARC Digests. The policy does not prove every authorized sender has aligned
+  DKIM/SPF or that alerts are reviewed.
+* Cloudflare is the authoritative DNS provider and the Cloudflare dashboard SSO
+  verification record indicates an SSO setup/claim. The upstream IdP and
+  enforcement policy are private unknowns.
+* All other named TXT records are current domain-verification indicators only.
+
+Standard email-security queries at 2026-08-23T14:21:45Z and confirmation at
+2026-08-23T14:24:17Z:
+
+  dig +time=3 +tries=1 +noall +answer tempo.xyz DS
+  dig +time=3 +tries=1 +noall +answer _mta-sts.tempo.xyz TXT
+  dig +time=3 +tries=1 +noall +answer _smtp._tls.tempo.xyz TXT
+  dig +time=3 +tries=1 +noall +comments +answer mta-sts.tempo.xyz A
+
+Result: no DS, MTA-STS TXT, SMTP TLS-reporting TXT, or mta-sts host address was
+returned. The latter names returned NOERROR with zero answers, not NXDOMAIN.
+Absence is an external configuration observation, not by itself a finding.
+
+
+SLACK: INTERNAL AUTOMATION AND PRODUCT OAUTH
+============================================
+
+Representative source query:
+
+  for repo in target/public-repos/*; do
+    git --git-dir="$repo" grep -n -I -E \
+      '(hooks\\.slack\\.com|slack\\.com/api|SLACK_[A-Z_]+|Slack)' HEAD -- \
+      ':!*.lock' ':!*.sum' ':!vendor/**' ':!**/fixtures/**'
+  done
+
+Current Tempo source, d656ef5581505b59f1611b358e611f5a602d399e:
+
+* .github/scripts/bench-slack-notify.js calls Slack chat.postMessage with
+  SLACK_BENCH_BOT_TOKEN and SLACK_BENCH_CHANNEL.
+* .github/workflows/bench-e2e*.yml and bench-replay*.yml inject those secrets.
+* .github/workflows/update-reth.yml posts through a separately named Slack
+  engineering webhook secret.
+* .github/scripts/bench-slack-users.json maps GitHub identities to Slack member
+  IDs for mentions/direct messages. No mapping value or identity was copied.
+* Benchmark jobs also inject a Grafana Tempo endpoint and use GitHub App STS
+  tokens, linking source-control, observability, and Slack notification paths.
+
+Current docs source, df7543408bee42c7a52f3fafaaa7def644598cbe:
+
+* .env.example declares SLACK_FEEDBACK_WEBHOOK.
+* src/lib/feedback.ts normalizes feedback, applies explicit token/private-key/
+  password redaction patterns, and submits through Feedback.slack().
+* This confirms the integration and a defensive redaction control. It does not
+  establish webhook scope, destination-channel sensitivity, or log retention.
+
+Current Tipbot source, e0a88f66bd7e1a6073b43f2cb6f3a5426d277318:
+
+* scripts/slack.ts defines the production callback as:
+    https://tip.bot/api/chat/slack/oauth/callback
+* The generated Slack manifest asks for app_mentions:read, assistant:write,
+  channels:history, channels:read, chat:write, commands, emoji:read,
+  groups:history, groups:read, reactions:read, usergroups:read, and users:read.
+* Event subscriptions, slash commands, and interactive requests are delivered
+  to https://tip.bot/api/chat/slack.
+* settings set org_deploy_enabled=false and socket_mode_enabled=false.
+* .github/workflows/production.yml deploys through Cloudflare Wrangler and
+  passes named Slack client, client-secret, signing-secret, app-ID, configuration
+  token, Cloudflare token, fee-payer key, and Tempo API key classes. Only names,
+  never values, are public.
+* Pull-request previews are limited in source to author associations
+  COLLABORATOR, MEMBER, or OWNER and use a GitHub preview environment, but the
+  preview workflow can create/update Slack apps and deploy Cloudflare Workers.
+* .github/actions/setup-slack-config-token/action.yml rotates Slack tooling
+  tokens and immediately writes the rotated refresh token back to GitHub
+  Actions secrets.
+* .github/sts/slack-config.sts.yaml authorizes preview and production environment
+  subjects to mint a short-lived GitHub App token with repository secrets:write.
+
+Tipbot is a customer-facing Slack app and does not, by itself, prove that its
+OAuth scopes are installed in Tempo's own workforce workspace. The separate
+core benchmark bot, docs webhook, and DNS domain verification are the evidence
+for Tempo's operational Slack relationship.
+
+
+TAILSCALE, PRIVATE ACCESS, AND ADMINISTRATIVE TRUST
+==================================================
+
+The current tempo.xyz TXT set includes a redacted Tailscale domain-verification
+record.
+
+Current TIDX source, 8b4511dd83fff7fc605602a1cc7cf1c245e9ecd2:
+
+  target/public-repos/tidx/README.md
+    trusted_cidrs = ["100.64.0.0/10"]
+    # Optional: trusted IPs for admin operations (e.g., Tailscale)
+
+  target/public-repos/tidx/src/config.rs
+    documents the same CGNAT range as a Tailscale example.
+
+Current Tempo Apps source, 5374dff9f01d050be7b9ab8d8d37349cf9506c76:
+
+  apps/contract-verification/src/index.tsx
+    WHITELISTED_ORIGINS includes "https://*.ts.net" for Tailscale Funnel.
+    Matching origins are accepted by CORS and skip the application rate limiter.
+
+Current Tipbot source, e0a88f66bd7e1a6073b43f2cb6f3a5426d277318:
+
+  vite.config.ts
+    development allowedHosts may be derived from PORTLESS_TAILSCALE_URL.
+
+Together, the public domain verification and code references establish a
+Tempo/Tailscale relationship and static design-review leads. They do not prove
+that the example trusted CIDR is deployed, that every ts.net host is
+Tempo-controlled, that any private service is Internet-reachable, that employee
+traffic is required to traverse Tailscale, or that Tailscale is the sole
+workforce VPN. The contract verifier's reliance on the request Origin header
+for the rate-limit exemption is one such design-review lead; no bypass request,
+tailnet discovery, private-service connection, or load test was attempted.
+
+
+PRODUCT OIDC AND IDENTITY-PROVIDER INTEGRATIONS
+===============================================
+
+Ordinary public OIDC discovery at 2026-08-23T14:25:14Z:
+
+  curl -sS --max-time 10 \
+    https://wallet.tempo.xyz/api/oidc/.well-known/openid-configuration
+
+Sanitized result:
+
+  HTTP/2 200
+  content-type: application/json
+  access-control-allow-origin: *
+  issuer: https://wallet.tempo.xyz/api/oidc
+  jwks_uri: https://wallet.tempo.xyz/api/oidc/.well-known/jwks.json
+  subject_types_supported: ["public"]
+  id_token_signing_alg_values_supported: ["EdDSA"]
+  claims_supported: [iss, aud, sub, iat, exp, nonce, email, email_verified]
+
+Current Accounts source, bff90b590894e074d2cd25e9ee9d5b197813ff33,
+independently sets this URL as the default verified-email OIDC issuer and
+contains adapters for Privy-hosted authentication/embedded wallets. Tempo Apps
+also has a dedicated Privy fee-payer deployment environment and source hostname.
+
+This is a product/user identity boundary. It does not establish that Tempo uses
+Privy or Tempo Wallet as its workforce SSO provider. The workforce IdP behind
+Google, Cloudflare Dashboard SSO, Slack, Tailscale, and other SaaS remains
+private.
+
+
+STATUS, SUPPORT, AND INCIDENT SURFACES
+======================================
+
+Exact read-only checks at 2026-08-23T14:20:42Z:
+
+  for host in status.tempo.xyz console.tempo.xyz support.tempo.xyz; do
+    dig +time=3 +tries=1 +noall +answer "$host" CNAME
+    dig +time=3 +tries=1 +noall +answer "$host" A
+    dig +time=3 +tries=1 +noall +answer "$host" AAAA
+  done
+  curl -sS --max-time 10 -D - -o /dev/null https://status.tempo.xyz/
+  curl -sS --max-time 10 -D - -o /dev/null https://console.tempo.xyz/
+
+Sanitized result:
+
+* status.tempo.xyz and console.tempo.xyz resolved to the same Cloudflare anycast
+  address set; no CNAME answer was returned.
+* status.tempo.xyz returned HTTP 200 through Cloudflare. HTML/assets and browser
+  reporting headers identified Better Stack. A Better Stack source_token value
+  was present in a report-only header and is [REDACTED]; it was not used.
+* console.tempo.xyz returned HTTP 200 with title "Tempo Developer Console".
+* support.tempo.xyz returned NOERROR with no A/AAAA/CNAME answer.
+
+Current docs source links status.tempo.xyz from the public performance page.
+Current tempo-support source, 29b168a6be1966ee3affab332ce9ffbf4793dbaa,
+directs general support to public GitHub Issues and security reports to a role
+mailbox [ADDRESS REDACTED].
+
+A default-branch scan across the 68 pinned mirrors found no retained first-party
+references to Zendesk, Intercom, Freshdesk, Help Scout, Front, PagerDuty,
+Opsgenie, or incident.io after excluding dependency locks, fixtures, testdata,
+and inherited fork-only references. This is not evidence that private tooling
+does not exist.
+
+
+DEVOPS, CLOUD, RUNNERS, AND OBSERVABILITY
+=========================================
+
+GitHub App STS boundary
+-----------------------
+
+Current gh-actions source, dd1014bf8244fded7a501e701cafab240a4f9f0e:
+
+* actions/github-sts requests a GitHub Actions OIDC token with an audience bound
+  to gh-sts.tehq.net in production (gh-sts.tehq.dev in development).
+* It sends that signed OIDC token to the external host's /sts/exchange endpoint,
+  with repository/organization scope and a named trust policy.
+* The service returns a short-lived GitHub App installation token; the action
+  masks it, persists it only as Action state/output, and attempts revocation at
+  job completion.
+* Trust policies live in .github/sts/*.sts.yaml in the scoped repository and
+  declare GitHub permissions. The STS service and GitHub App are therefore a
+  high-leverage external control-plane dependency. Ownership, deployment source,
+  app installation governance, audit logging, and break-glass control are not
+  established by the public client repository.
+
+gh-sts.tehq.net is recorded here only as the third-party endpoint embedded in
+Tempo's current public action. No DNS lookup, HTTP request, port scan, service
+enumeration, or authentication attempt was made against it or its development
+counterpart.
+
+Current Tempo head d656ef5581505b59f1611b358e611f5a602d399e is titled
+"ci: use GitHub STS for release automation instead of app credentials". Its
+.github/sts/release-pr.sts.yaml grants contents:write and pull_requests:write
+to jobs presenting the release-pr environment subject; source comments say it
+replaces GitHub App credentials formerly stored as environment secrets. This is
+a confirmed reduction in long-lived secret exposure, while concentrating trust
+in the STS service, its GitHub App, environment subject matching, and policy
+review.
+
+Cloud and runner entrypoints
+----------------------------
+
+Representative current source evidence:
+
+* Cloudflare authoritative DNS and dashboard-SSO TXT are live.
+* accounts, tempo-apps, tip.bot, and MPP repositories deploy Workers with named
+  Cloudflare account/API tokens; Tipbot also manages D1 and Queues.
+* pathusd-reserves deploys to Vercel with named organization, project, and token
+  secrets. Tempo documentation/build source also identifies Vercel deployment.
+* Tempo release and Wallet CLI publication paths upload artifacts to Cloudflare
+  R2 using S3-compatible credentials.
+* Current Tempo multi-region benchmark automation runs on Depot-hosted runner
+  labels, uses Terraform, and obtains AWS role and GCP workload-identity
+  credentials through GitHub OIDC. Public cloud account/project identifiers and
+  a service-account address exist in source but are redacted here.
+* The same benchmark path checks organization membership, obtains a GitHub App
+  token from the external STS, checks out a private benchmark repository, and
+  injects ClickHouse/metrics/logging endpoints. Public source cannot establish
+  the cloud-side OIDC conditions or effective role permissions.
+* npm, PyPI, GitHub attestations, and several release workflows use GitHub OIDC
+  trusted/keyless publishing rather than only static publication secrets.
+
+Observability and analytics
+---------------------------
+
+Current Tempo Apps source configures Sentry, Datadog, and PostHog for the public
+Explorer. Public DSN/project/client identifiers are omitted. An ordinary GET of
+https://explore.tempo.xyz/ at 2026-08-23T14:24:45Z returned HTTP 200 through
+Cloudflare, title "Explore - Tempo", and live HTML containing PostHog bootstrap
+code. Tempo benchmark source also references Grafana Tempo, ClickHouse,
+VictoriaMetrics, VictoriaLogs, and OTLP endpoints. status.tempo.xyz is Better
+Stack-backed as described above.
+
+These providers receive telemetry or influence incident visibility. Public
+source does not establish project membership, access controls, data retention,
+alert routing, redaction quality, or whether compromise could alter production
+alerts.
+
+
+LIMITATIONS AND OWNER-CONFIRMATION QUESTIONS
+============================================
+
+* DNS verification may be stale after an evaluation or migration.
+* A source secret name proves a workflow expects a secret, not that the secret
+  currently exists, remains valid, or has the implied provider scope.
+* GitHub default-branch source cannot expose private repositories, organization
+  enterprise policy, private environments, App owners, audit logs, or cloud-side
+  federation rules.
+* The public mail records do not reveal Google Workspace administrative roles,
+  MFA, context-aware access, delegated mailboxes, forwarding, app passwords,
+  OAuth grants, or recovery policy.
+* The Slack evidence does not reveal workspace URL, membership, Enterprise Grid
+  organization, retention, guest policy, Connect policy, app approvals, or token
+  scopes beyond the published Tipbot manifest.
+* The Tailscale evidence does not reveal tailnet name, members, ACLs, grants,
+  device posture, exit nodes, subnet routers, or production resource reachability.
+* Better Stack, Cloudflare, Vercel, GitHub STS, Depot, AWS, GCP, observability,
+  and SaaS tenant control should be confirmed with Tempo before a final internal
+  assurance claim.
+* No attempt was made to validate any credential-shaped value or to exercise a
+  callback, webhook, OAuth flow, admin route, cloud role, or status ingestion
+  endpoint.
+
+Recommended owner evidence for an authorized internal phase:
+
+1. SaaS inventory with owner, SSO/SCIM state, MFA/device policy, admin roles,
+   break-glass accounts, audit export, retention, and offboarding SLA.
+2. Google Workspace OAuth/app-password/forwarding/delegation review and mail-flow
+   evidence, including DKIM selectors and MTA transport-security decisions.
+3. Slack app inventory, token rotation, Connect/guest policy, retention, exports,
+   and the separation between internal automation and customer-installed Tipbot.
+4. Tailscale ACL/grants/device-posture review and proof that trusted CIDRs or
+   *.ts.net development paths cannot confer unintended production authority.
+5. GitHub STS service ownership, reproducible deployment, App installation and
+   permission inventory, environment protection, policy review, token audit, and
+   fail-closed behavior.
+6. Cloudflare/Vercel/AWS/GCP/Depot/registry/observability account separation,
+   least privilege, two-person production change approval, and correlated audit
+   logging.

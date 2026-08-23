@@ -1,0 +1,209 @@
+Tempo analysis evidence: current-default-branch freshness for C-006, C-008, and C-009
+Observed: 2026-08-23T14:33:14Z
+Evidence type: freshly fetched public source plus local/dummy regression execution
+Safety: no GitHub write, workflow trigger, tag, PR, credential use, authorization, or production state change
+
+[Purpose]
+
+The three affected default branches advanced after the 2026-08-21 finding snapshots. This
+record checks whether those source changes remove, change, or leave each finding in place.
+It does not replace the separately refreshed live GitHub ruleset/environment evidence.
+
+[Fresh public default-branch heads]
+
+- tempoxyz/tempo
+  - current: d656ef5581505b59f1611b358e611f5a602d399e
+  - authored: 2026-08-21T13:32:30-07:00
+  - subject: ci: use GitHub STS for release automation instead of app credentials (#7279)
+  - previous finding baseline 86ff4deaebfee38bb0b000e648b2b367810265ff is an ancestor
+- tempoxyz/wallet-cli
+  - current: 5a06c07a76c175667507724da4c0b4ac185df048
+  - authored: 2026-08-21T13:34:59-07:00
+  - subject: ci: use GitHub STS for changelog generation instead of app credentials (#99)
+  - previous finding baseline 677e52278eaafa4ec356ed9c750446fba320cdfa is an ancestor
+- tempoxyz/wallet-rs
+  - current: 7801e796b8239514d7d8544cc1c32bfe4795d810
+  - authored: 2026-08-21T13:33:53-07:00
+  - subject: ci: use GitHub STS for release automation instead of app credentials (#525)
+  - previous finding baseline 5245df47d3ada6a6eecf67342f03919d0123e8fc is an ancestor
+
+The mirrors' symbolic HEADs were refs/heads/main and resolved to the commits above.
+
+[C-006: release tags bypass protected-main review]
+
+Current source status: STILL PRESENT; credential lifetime was narrowed, but the release
+trigger and artifact-authority boundary were not remediated by the new commits.
+
+Evidence at tempo d656ef5581505b59f1611b358e611f5a602d399e:
+
+- .github/workflows/docker.yml is byte-for-byte unchanged from the finding baseline.
+  Both revisions use blob 0012d3326a61fc13092cb6f336c8ab3c7a8734eb.
+- .github/workflows/docker.yml:5-11 still accepts a push to any v*.*.* tag.
+- .github/workflows/docker.yml:32-36 still grants packages:write and id-token:write without
+  a GitHub Environment, lines 73-80 still derive SemVer and mutable stable tags, and lines
+  161-251 still authenticate, push, and keylessly sign the images built from the tag.
+- .github/workflows/release.yml now has blob
+  e857fa9b81ae002246829613c9949382d324c8a4. Lines 5-10 still accept v*.*.* tag pushes.
+- release.yml:79-90 still makes build-release depend only on get-version and enters the
+  release environment. Lines 185-195 still consume the GPG signing authority.
+- release.yml:242-282 still makes create-release depend on get-version and build-release,
+  not check-version, and creates the GitHub release.
+- release.yml:382-429 still makes upload-cloudflare depend on get-version and
+  build-release, not check-version, and consumes the R2 publication authority.
+- Commit d656ef5581505b59f1611b358e611f5a602d399e replaced the release-bot App secrets used
+  by the version-bump PR job with a short-lived GitHub STS token. The new policy at
+  .github/sts/release-pr.sts.yaml grants contents:write and pull_requests:write to the
+  release-pr environment subject. That change improves credential lifetime and removes a
+  stored App private-key dependency, but it does not gate tag creation, bind the tag to a
+  reviewed commit, or gate the Docker/binary artifact publication jobs on check-version.
+
+Relevant immutable blobs:
+
+- .github/workflows/docker.yml: 0012d3326a61fc13092cb6f336c8ab3c7a8734eb
+- .github/workflows/release.yml: e857fa9b81ae002246829613c9949382d324c8a4
+- .github/sts/release-pr.sts.yaml: d91c0663ac45e8a6e99a98a4523c8c96025a3289
+
+Conclusion and limitation:
+
+The source-side route remains: a v*.*.* tag selects both the code and workflow definition
+that publish official images and signed/R2 binaries without first requiring the tagged
+commit to pass protected-main review. Actual exploitability still requires a write-capable
+identity and depends on current private/public tag rules, environment protections, and
+downstream rollout controls. This source-only freshness check did not query or alter those
+controls; correlate it with evidence/2026-08-23-github-controls.txt.
+
+[C-008: wallet PR automation reaches the release boundary]
+
+Current source status: STILL PRESENT, WITH A MATERIAL IMPLEMENTATION CHANGE. The stored
+release-bot credential path was replaced by OIDC/GitHub STS, but unreviewed same-repository
+PR code still executes inside the shared release environment and before later secret/token
+consumers. The finding should describe a short-lived STS token, not the removed App-secret
+wiring.
+
+Evidence at wallet-cli 5a06c07a76c175667507724da4c0b4ac185df048:
+
+- The only changes since 677e52278eaafa4ec356ed9c750446fba320cdfa are
+  .github/workflows/changelog-generate.yml and the new
+  .github/sts/release.sts.yaml.
+- changelog-generate.yml:3-15 still triggers on a labeled pull_request, accepts a
+  changelog:* label for a same-repository head, and enters environment:release without a
+  review/merge condition.
+- Lines 45-50 now request a GitHub token via the pinned STS action with id-token:write.
+  The policy grants contents:write and pull_requests:write to the wallet-cli release
+  environment subject.
+- Lines 52-59 still check out the exact unmerged PR head. Lines 79-85 still run
+  pnpm install --frozen-lockfile against PR-controlled package metadata and lifecycle
+  scripts. Lines 99-136 later expose ANTHROPIC_API_KEY to the changelog process. Lines
+  153-164 later expose the STS token as APP_TOKEN and in the git-push URL.
+- The STS policy comment says the previous release-bot App credential wiring was never
+  configured for this repository. Therefore the old static source was not proof that its
+  App-token mint actually succeeded. The current workflow requests a replacement STS
+  token, but this review did not trigger a run and does not claim the exchange succeeded.
+- .github/workflows/build.yml is byte-for-byte unchanged at blob
+  7cb95df6a724bd3276ad5eb83e7a454489fe10be. Its publish job still enters the same release
+  environment (lines 185-192), consumes RELEASE_SIGNING_KEY (247-280), and consumes R2
+  publication credentials (282-307).
+
+Relevant wallet-cli immutable blobs:
+
+- .github/workflows/changelog-generate.yml:
+  7e6a44d528a1aad8b92731681d52548544e37dff
+- .github/sts/release.sts.yaml: c0e94b0d9d0bf9b42c931d1c7c5336a2e0ef36cb
+- .github/workflows/build.yml: 7cb95df6a724bd3276ad5eb83e7a454489fe10be
+
+Downstream freshness:
+
+- wallet-rs 7801e796b8239514d7d8544cc1c32bfe4795d810 changed only its changelog/release
+  automation and added an STS policy. ARCHITECTURE.md is unchanged at blob
+  1dfa264ec68d61fb92ed8b36a8fc950d35f4f635.
+- Tempo's wallet extension launcher is unchanged from the finding baseline at blob
+  19f6f877f7fd74b500d788142babd01a88afb510.
+- wallet-cli's release workflow, extension signing/R2 publication path, wallet store, and
+  local-key consumption source did not change in this default-branch interval.
+
+PoC relevance and limitations:
+
+The existing dummy reproduction in
+evidence/2026-08-23-C-008-wallet-release-boundary-poc.txt remains shape-correct: the current
+job still obtains steps.app-token.outputs.token before PR-controlled pnpm lifecycle code
+and later passes that token to git. The token is now intended to be short-lived and issued
+through STS. The dummy PoC establishes cross-step process interception only; it does not
+prove live STS issuance, current secret placement, successful release-environment entry,
+or access to a real signing/R2 value.
+
+The stronger source route also remains conditional: a same-repository PR controls the
+pull_request workflow definition and selects the shared release environment, so it can name
+environment secrets that are used by the release job if those values remain present and no
+private control blocks the run. An outside fork PR is explicitly excluded. Correlate current
+environment protection with evidence/2026-08-23-github-controls.txt.
+
+[C-009: wallet CLI masks default access-key authority]
+
+Current status: STILL PRESENT AND SOURCE-IDENTICAL. A focused regression failed against the
+unmodified current head and passed after the same diagnostic one-line display change.
+
+Unchanged wallet-cli blobs from the finding baseline to
+5a06c07a76c175667507724da4c0b4ac185df048:
+
+- src/provider.ts: dd4da9675a9c59732190d0446884b9d827574aac
+  - lines 29-41 still request wallet_connect with authorizeAccessKey containing only expiry.
+- src/wallet/store.ts: d8cd3c331fe1aaf41c9bc6a09c2293a58daf5822
+  - lines 64-87 and 112-125 still normalize an omitted limits field to an empty array.
+- src/commands/identity.ts: 42258f7960313b96c61c6a9b0cf3dad652b0df01
+  - lines 467-500 still read limits[0], hardcode unlimited:false, and render a missing
+    first limit as 0.000000; lines 515-525 still flatten absent call scopes for output.
+
+Unchanged protocol blobs from the prior Tempo baseline to
+d656ef5581505b59f1611b358e611f5a602d399e:
+
+- crates/primitives/src/transaction/key_authorization.rs:
+  80c182a1959a2f89034cce5c3dc5171166d7d057
+  - lines 177-220 still define omitted limits as unlimited and omitted calls as unrestricted.
+- crates/revm/src/handler.rs: 1b27e1bc58bcd35766a760bdc7e8e9eea280ba1f
+  - lines 1557-1585 still translate omitted limits to enforce_limits=false and omitted calls
+    to allow_any_calls=true.
+- crates/precompiles/src/account_keychain/mod.rs:
+  5da9634ef42fcd00c41e988ae4f36def68e90fed
+  - lines 1326-1351 still bypass the spending deduction when enforce_limits is false.
+
+Local regression at the exact current wallet-cli head:
+
+  ./node_modules/.bin/vitest run test/identity.test.ts \
+    -t 'reports an omitted-limit access key as unlimited'
+
+With the upstream line unlimited:false restored and only the focused regression added:
+
+  Test Files  1 failed (1)
+  Tests       1 failed | 39 skipped (40)
+  expected unlimited:true; received unlimited:false
+
+After restoring the diagnostic change unlimited:limit === undefined:
+
+  ./node_modules/.bin/vitest run test/identity.test.ts
+  Test Files  1 passed (1)
+  Tests       40 passed (40)
+
+  ./node_modules/.bin/tsc -b --noEmit
+  exit 0
+
+The diagnostic line is not a complete remediation because the store has already collapsed
+the protocol-opposite states None (unlimited) and Some([]) (deny all). The production fix
+must preserve those states end to end.
+
+Impact and limitation:
+
+The CLI's current source still represents an expiry-only access key as zero/non-unlimited
+and empty-scoped even though the protocol treats omitted limits/scopes as its broad modes.
+The hosted CLI-auth service's private policy could inject a finite token limit, the public
+approval UI discloses Unlimited in the observed omission path, and no production key was
+created or queried. Thus the output-integrity defect is confirmed at the current head; the
+population and spending ceiling of affected live keys remain owner-only questions.
+
+[Overall freshness result]
+
+- C-006: still present in current source; STS narrows one auxiliary credential path but does
+  not repair the tag-to-artifact review bypass.
+- C-008: still present but update the mechanism: GitHub STS replaces unconfigured stored
+  release-bot credentials. The unreviewed PR/release-environment and lifecycle boundaries
+  remain; live token/secret availability is not claimed.
+- C-009: unchanged and locally reproduced at the exact current wallet-cli head.

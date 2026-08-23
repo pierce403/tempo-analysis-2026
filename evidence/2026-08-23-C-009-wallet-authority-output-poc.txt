@@ -1,0 +1,60 @@
+Tempo analysis evidence: C-009 wallet authority/output mismatch PoC
+Executed: 2026-08-23T14:20Z
+Evidence type: local regression test and proof-only patch
+wallet-cli revision: 677e52278eaafa4ec356ed9c750446fba320cdfa
+Safety: local code/tests only; no device code, wallet, key, transaction, or network authorization
+
+Original behavior
+-----------------
+The regression constructs the normalized form of an access key whose limits were omitted and
+asserts that the CLI must report it as unlimited. Against the released implementation, the
+focused test fails:
+
+FAIL  test/identity.test.ts > identity commands > reports an omitted-limit access key as unlimited
+
+- Expected
++ Received
+
+  "spending_limit": {
+-   "unlimited": true,
++   "unlimited": false,
+  },
+  "spending_limits": [],
+
+Test Files  1 failed (1)
+Tests       1 failed | 39 skipped (40)
+
+Proof-only display change
+-------------------------
+Changing the current-key display branch from hardcoded false to `limit === undefined` makes the
+regression and complete identity suite pass:
+
+Test Files  1 passed (1)
+Tests       40 passed (40)
+
+`tsc -b --noEmit` also completed successfully.
+
+Protocol/source invariant
+-------------------------
+- Tempo KeyAuthorization limits None = unlimited; Some([]) = deny all.
+- allowed_calls None = unrestricted; Some([]) = deny all calls.
+- wallet-cli store normalization maps a missing limits field to [].
+- current output hardcodes unlimited false and shows 0.000000 when no first limit exists.
+
+Impact demonstrated
+-------------------
+The released output represents the strongest protocol spend state as non-unlimited with no listed
+limit. It also renders missing/unrestricted call scopes as an empty list. A responder relying on
+this output can materially underestimate a stolen key's authority.
+
+Important fix limitation
+------------------------
+The one-line proof is not a correct final fix: normalization has already collapsed protocol-
+opposite missing and explicit-empty values. The implementation must preserve or query canonical
+enforcement/scope modes.
+
+Not demonstrated
+----------------
+- The public approval UI visibly labels a missing token limit as Unlimited.
+- The private hosted server may inject a finite token limit; no production POST was made.
+- The output mismatch does not provide the initial workstation/dependency/update compromise.

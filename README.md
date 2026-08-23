@@ -10,6 +10,7 @@ Initial passive recon and scope definition began on 2026-08-21. No vulnerability
 
 Start with:
 
+- [REPORT.md](REPORT.md) — dated pentest-style assessment with linked sanitized evidence
 - [SURFACE.md](SURFACE.md) — current organizational attack-surface map
 - [FINDINGS.md](FINDINGS.md) — continuously maintained, redacted findings register
 - [SCOPE.md](SCOPE.md) — boundaries, priorities, and open scope questions

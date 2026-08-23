@@ -22,15 +22,6 @@ This is the authoritative queue for bounded research work. Detailed chronology b
   - [ ] Behavioral resemblance is not presented as actor attribution.
   - [ ] Damage-only paths are deprioritized unless they enable theft or concealment.
 
-### T-006 — Inventory Tempo's public infrastructure
-
-- **State**: active
-- **Outcome**: Build a dated inventory of public `tempo.xyz` hosts and services using passive sources followed by bounded read-only confirmation.
-- **Evidence required**:
-  - [ ] Passive sources, DNS answers, certificate names, HTTP behavior, provider inference, and ownership confidence are recorded.
-  - [ ] Wildcard behavior is tested before any small rate-limited DNS wordlist.
-  - [ ] No unrelated partner domains, intrusive requests, authentication testing, or state changes are included.
-
 ## Queued
 
 ### T-003 — Classify the public repository inventory
@@ -55,6 +46,27 @@ This is the authoritative queue for bounded research work. Detailed chronology b
 None.
 
 ## Complete
+
+### T-011 — Produce the consolidated pentest report and evidence pack
+
+- **State**: complete
+- **Outcome**: Created a dated root `REPORT.md` presenting the assessed Tempo attack surface, findings, local-only PoC evidence, public perimeter, communications/identity exposure, and GitHub governance in a conventional pentest-report structure.
+- **Evidence required**:
+  - [x] Every issue is tied to a stable identifier, severity, affected revision/asset, prerequisites, impact, remediation, and a linked sanitized text evidence record.
+  - [x] Reproduction evidence distinguishes executed local/dummy PoCs, static configuration proof, and live read-only observations; conditional findings are not presented as exploited.
+  - [x] Public hosts, DNS/TLS/HTTP/common-port observations, and provider/shared-edge limitations are current and timestamped.
+  - [x] Communications, email, Slack, VPN/SSO, support, and DevOps exposure is limited to public evidence with private controls marked unknown.
+  - [x] GitHub inventory covers outside-fork versus trusted-writer PR paths, branch/ruleset visibility, workflows, environments, runners, and release/deploy entrypoints.
+  - [x] No credential was verified, no authentication or state-changing request was attempted, and no unrelated provider/partner infrastructure was scanned.
+
+### T-006 — Inventory Tempo's public infrastructure
+
+- **State**: complete
+- **Outcome**: Built a dated inventory of public `tempo.xyz` hosts and services using passive sources followed by bounded DNS/TLS/HTTP/common-port confirmation, with shared-provider edges and wildcard results explicitly separated from Tempo origins.
+- **Evidence required**:
+  - [x] Passive sources, DNS answers, certificate names, HTTP behavior, provider inference, and ownership confidence are recorded.
+  - [x] Wildcard behavior was tested before interpreting the source-derived name inventory.
+  - [x] No unrelated partner domains, intrusive requests, authentication testing, or state changes were included.
 
 ### T-010 — Find and validate another high-impact theft-relevant bug
 

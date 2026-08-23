@@ -1,0 +1,44 @@
+Tempo analysis evidence: smart-contract and native-contract test baseline
+Source execution date: 2026-08-21; focused finding probes refreshed 2026-08-23
+Evidence type: complete checked-in local suites plus focused local regressions
+Safety: pinned public source and local execution only; no public RPC writes or deployments
+
+Zones Solidity runtime
+----------------------
+Repository/revision: tempoxyz/zones acaa6a6734860ecd81d7f01de3c973b068dca2ac
+Toolchain: Tempo-patched Foundry 1.7.2-dev at 6902a962, Solidity 0.8.35,
+Rust 1.97.0, hardfork tempo:T8, Z3 4.13.3.
+
+Checked-in Forge suite: 485 passed, 0 failed, 0 skipped.
+Symbolic properties:     7 passed, 0 failed, 0 skipped.
+Production coverage:    95.78% lines; 79.58% branches.
+ABI comparisons:        5 matched, 0 mismatched.
+Storage-layout tests:   4 passed, 0 failed, 0 skipped.
+
+Tempo native contracts/precompiles
+-----------------------------------
+Repository/revision: tempoxyz/tempo 88b5d7720d29655fdf9025bb14ddcd6bba1f645c.
+The relevant precompile/contract trees matched later reviewed main revision
+86ff4deaebfee38bb0b000e648b2b367810265ff.
+
+tempo-precompiles: 1,088 passed, 0 failed, 15 explicitly ignored.
+tempo-revm:          197 passed, 0 failed, 0 ignored.
+
+The executed set covers Account Keychain, TIP-20/TIP-403, DEX, fees, nonces, signature
+verification, Zone Factory, and native storage layouts. Green component suites do not establish
+deployment identity or cross-system security.
+
+tempo-std
+---------
+Repository/revision: tempoxyz/tempo-std c77f1671f7fd01c698f1344c2a5f38f11a7f8384.
+Original checked-in suite: 3 passed, 0 failed, 0 skipped.
+Executed helper coverage: 0/538 lines and 0/92 functions.
+2026-08-23 focused C-007 probe: 1 passed, 0 failed, 0 skipped.
+
+Interpretation
+--------------
+No active failure appeared in the complete native or Zones component suites. Focused review still
+found C-003 and C-007 because the relevant cross-system composition and helper path were absent
+from the checked-in coverage. Test success is a baseline, not a claim of vulnerability absence.
+
+Full methodology and commands: recon/2026-08-21-contract-test-baseline.md

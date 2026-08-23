@@ -1,0 +1,38 @@
+Tempo analysis evidence: C-007 tempo-std key-authorization RLP PoC
+Executed: 2026-08-23T14:21Z
+Evidence type: focused local Foundry test
+tempo-std revision: c77f1671f7fd01c698f1344c2a5f38f11a7f8384
+Compiler: Solidity 0.8.35
+Safety: local encoding only; no RPC or transaction submission
+
+Test input and invariant
+------------------------
+The test passes hex c180, a minimal RLP list, to withKeyAuthorization(). The canonical optional
+key-authorization transaction field must remain a list. The current library output ends with
+82 c1 80: 0x82 is an added RLP string prefix wrapping the caller-supplied 0xc1 list.
+
+Command
+-------
+/home/pierce/.foundry/bin/forge test --match-contract KeyAuthEncodingProbe -vvv
+
+Observed result
+---------------
+Ran 1 test for test/KeyAuthEncodingProbe.t.sol:KeyAuthEncodingProbe
+[PASS] testStringWrapsRlpKeyAuthorization() (gas: 33502)
+Suite result: ok. 1 passed; 0 failed; 0 skipped
+
+Full local suite after adding the probe
+---------------------------------------
+Ran 2 test suites: 4 tests passed, 0 failed, 0 skipped.
+
+Impact demonstrated
+-------------------
+The Solidity helper changes the RLP type at the optional key-authorization position. Tempo's
+canonical Rust decoder expects a list prefix there, so the expected direct effect is rejection or
+incorrect test vectors for callers that use this helper.
+
+Not demonstrated
+----------------
+- No live node accepted the malformed encoding.
+- No authorization bypass or fund loss was shown.
+- No production consumer of this helper has been identified.

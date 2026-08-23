@@ -1,0 +1,47 @@
+Tempo analysis evidence: C-003 ZonePortal allowance/access-key composition PoC
+Executed: 2026-08-23T14:22Z
+Evidence type: focused local Rust test with dummy addresses and in-memory storage
+Tempo revision: 86ff4deaebfee38bb0b000e648b2b367810265ff
+Safety: no public RPC, deployed contract, wallet, allowance, balance, or state change
+
+Test model
+----------
+- Tempo hardfork: T8
+- Root TIP-20 balance and pre-existing portal allowance: 1000 units
+- Access-key TIP-20 spending limit: 1 unit
+- Call scope: only a synthetic portal and the real deposit selector 0x03dd6f34
+- Operation: the portal calls TIP-20 transferFrom(owner, portal, 1000)
+
+Assertions
+----------
+- top-level portal/selector scope validation succeeds;
+- owner balance becomes 0;
+- portal balance becomes 1000; and
+- the access-key remaining spending limit remains 1.
+
+Command
+-------
+env PATH=/home/pierce/.rustup/toolchains/1.97.0-x86_64-unknown-linux-gnu/bin:/usr/local/bin:/usr/bin:/bin \
+  BINDGEN_EXTRA_CLANG_ARGS=-I/usr/lib/gcc/x86_64-linux-gnu/15/include \
+  cargo --config 'build.rustc="/home/pierce/.rustup/toolchains/1.97.0-x86_64-unknown-linux-gnu/bin/rustc"' \
+  test -p tempo-precompiles --features test-utils \
+  tip20::tests::test_zone_portal_deposit_scope_does_not_bound_preexisting_allowance \
+  -- --exact --nocapture
+
+Observed result
+---------------
+running 1 test
+test tip20::tests::test_zone_portal_deposit_scope_does_not_bound_preexisting_allowance ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1000 filtered out
+
+Impact demonstrated
+-------------------
+The native scope check authorizes the intended portal selector, while allowance-backed
+transferFrom moves 1000 times the configured delegated limit without decrementing it. The loss
+ceiling in this composition is the root balance/allowance, not the delegated limit.
+
+Not demonstrated
+----------------
+- The test models the exact native primitive but does not execute a deployed Zone runtime.
+- No current mainnet portal, affected allowance, user intent, or wallet presentation was proven.
+- Allowance exemption is intentional and public; the candidate is the product-level composition.

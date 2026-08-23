@@ -1,6 +1,6 @@
 # Tempo Organizational Attack Surface
 
-Snapshot time: **2026-08-21 19:01 UTC** \
+Snapshot time: **2026-08-23 14:38 UTC** (public perimeter/control refresh; repository-history scan baseline 2026-08-21) \
 Scope: Tempo-controlled public systems and public integration boundaries \
 Perspective: external, read-only, public-information review
 
@@ -63,11 +63,11 @@ flowchart LR
 
 ## Public source-control inventory
 
-The GitHub API returned **68 public repositories** at `2026-08-21T16:12:50Z`: **52 non-forks**, **16 forks**, **15 archived repositories**, and **48 active non-fork repositories**. The complete set was mirrored with all reachable Git history under ignored `target/public-repos/`; no third-party submodule repositories were recursively added merely because a Tempo repository referenced them.
+The GitHub API still returned **68 public repositories** in the 2026-08-23 refresh: **52 non-forks**, **16 forks**, **15 archived repositories**, and **48 active non-fork repositories**. The complete 2026-08-21 set was mirrored with all then-reachable Git history under ignored `target/public-repos/`; affected finding repositories were refreshed separately on 2026-08-23. No third-party submodule repositories were recursively added merely because a Tempo repository referenced them.
 
-Across the current default branches, 52 repositories contain 446 workflow files; the 48 active non-forks account for 203 of those files across 34 repositories. Among those active non-forks, source flags show 30 repositories referencing a secrets context, 30 declaring some write permission, seven using `pull_request_target`, six using `issue_comment`, and Tempo/Zones referencing self-hosted runners. These are review leads, not vulnerability claims. Twenty-two repositories carry their own `SECURITY.md`, and the organization-level `.github` repository supplies a shared policy. GitHub reported 20 repositories with a latest stable release and four with Pages enabled. These counts describe public configuration, not the number of production services.
+Across the current default branches, 52 repositories contain 446 workflow files; the 48 active non-forks account for 203 of those files across 34 repositories. Among those active non-forks, source flags show 30 repositories referencing a secrets context, 30 declaring some write permission, seven using `pull_request_target`, seven using `issue_comment`, and Tempo/Zones referencing self-hosted runners. These are review leads, not vulnerability claims. Twenty-two repositories carry their own `SECURITY.md`, and the organization-level `.github` repository supplies a shared policy. GitHub reported 20 repositories with a latest stable release and four with Pages enabled. These counts describe public configuration, not the number of production services.
 
-The authoritative pinned manifest is [`recon/2026-08-21-public-repositories.csv`](recon/2026-08-21-public-repositories.csv). Repository grouping below is functional and does not prove production use. Public governance metadata was sampled for 18 financially sensitive repositories: 17 default branches appeared protected, `txgen` appeared unprotected, 40 environments were visible, and only `tempo-go/releases` exposed required reviewers. Private organization policy may add controls that the public API cannot show.
+The authoritative full-scan manifest is [`recon/2026-08-21-public-repositories.csv`](recon/2026-08-21-public-repositories.csv). Repository grouping below is functional and does not prove production use. The 2026-08-23 public API reported 67 default branches protected; `txgen/main` was the only active default branch reported unprotected. Across all 53 nonarchived repositories, 64 returned ruleset records (62 active and two disabled) were branch-targeted and zero were tag-targeted. In the latest successful detailed environment sample, 40 environments were returned across 12 of 18 queried financially sensitive repositories and only `tempo-go/releases` exposed required reviewers; the August 23 environment-detail refresh hit the public API rate limit, so private or changed controls remain possible.
 
 ### Protocol, contracts, and transaction tooling — 6
 
@@ -109,6 +109,8 @@ Publicly observable surfaces include:
 - GitHub-hosted and self-hosted runners, repository-local actions, dependency installation hooks, PR-generated artifacts, and executable resolution from the checkout;
 - repository and environment secrets, GitHub App credentials, OIDC identity tokens, short-lived STS tokens, and `GITHUB_TOKEN` permissions;
 - GitHub Releases, attestations, GHCR, Docker Hub, R2-hosted binaries, package registries, and signing keys.
+
+The current control refresh adds these counts: 51 of 53 nonarchived repositories inherit the active organization default-branch ruleset, while `tip.bot` and `txgen` return no ruleset list (`tip.bot/main` is independently reported protected with five checks). Twenty-one repositories and 39 workflows have tag triggers; ten active original repositories account for 14 of those workflows. Twenty-five repositories and 39 workflows reference environments; 14 active originals account for 27. Tempo, wallet-cli, and wallet-rs now use GitHub OIDC with an externally hosted GitHub App STS for portions of release automation. This reduces stored App-key exposure but makes STS policy, App installation, and OIDC subject matching a high-value third-party control boundary.
 
 Confirmed defensive controls include protected default/release branches in important repositories, pinned third-party actions in several reviewed workflows, fork-PR secret withholding, checks/reviews on protected branches, release checksums/signatures, and Sigstore attestations for Tempo node releases.
 
@@ -181,7 +183,7 @@ The current wallet-cli v0.7.0 requests a 30-day key with no call scopes and no r
 
 ## Public web, API, and data plane
 
-One ordinary unfollowed HTTPS request was made to each source-documented host below at approximately 16:15 UTC. Status proves only that a route answered; it does not establish ownership, source-to-deployment identity, origin security, or permission for intrusive testing.
+One ordinary unfollowed HTTPS request was made to each source-documented host during the 2026-08-23 14:17–14:29 UTC refresh. Status proves only that a route answered; it does not establish ownership, source-to-deployment identity, origin security, or permission for intrusive testing.
 
 | Host | Observed response | Apparent role and high-value boundary |
 | --- | --- | --- |
@@ -189,20 +191,24 @@ One ordinary unfollowed HTTPS request was made to each source-documented host be
 | `accounts.tempo.xyz` | `200` Markdown | Accounts SDK documentation and integration guidance |
 | `auth.tempo.xyz` | `200` HTML, title `Tempo Auth`, Vercel | Wallet signing and access-key dialog origin; see C-001 timeline |
 | `wallet.tempo.xyz` | `200` HTML; CLI-auth public assets inspected read-only | Wallet product, device-code approval, key-permission display, and distribution entry; see C-009 |
+| `console.tempo.xyz` | `200` HTML | Developer Console and developer-account trust surface |
 | `keys.tempo.xyz` | `404` at `/` | WebAuthn/key-manager Worker; root response is not a health verdict |
 | `sponsor.tempo.xyz` | `400` JSON at `/` | Mainnet transaction sponsorship/fee-payer API |
 | `explore.tempo.xyz` | `200` HTML | Explorer, transaction display, wallet links and chain interpretation |
 | `contracts.tempo.xyz` | `302` to `/docs` | Contract verification/source metadata |
-| `indexer.tempo.xyz` | `404` at `/` | Structured chain data; root response is not a health verdict |
+| `indexer.tempo.xyz` | `402` at `/` | Structured chain data/payment boundary; root response is not a health verdict |
+| `tidx.tempo.xyz` | `401` at `/` | Indexed-data/API boundary; root response is not a vulnerability finding |
+| `mcp.tempo.xyz` | `405` at `/` | MCP/service boundary; root method response is not a health verdict |
 | `tokenlist.tempo.xyz` | `302` to `/docs` | Token metadata and user-facing asset identity |
 | `rpc.tempo.xyz` | `400` JSON at GET `/`; JSON-RPC chain ID succeeded | Mainnet transaction submission and canonical read view |
 | `docs.tempo.xyz` | `308` to `tempo.xyz/developers` | Legacy/canonical documentation routing |
 | `mpp.tempo.xyz` | `200` text | Machine Payments Protocol web/service surface |
 | `cli.tempo.xyz` | `404` HTML at `/` | Wallet extension manifests and binaries live at non-root paths |
 | `snapshots.tempo.xyz` | `200` HTML | Node snapshot distribution and operator bootstrap |
+| `status.tempo.xyz` | `200` HTML, Better Stack-backed | Public incident/status communication and monitoring trust |
 | `app.tempo.xyz` | DNS lookup failed | Historical/source reference; not a confirmed current service |
 
-Current non-archived default-branch source contains **96 distinct `tempo.xyz`-shaped host strings**: 38 current official-source references, 19 current MPP-integration references, 30 non-production or historical environment names, and nine fixtures or malformed strings. They are discovery candidates, not 96 production services. The complete source-only index is [`recon/2026-08-21-source-referenced-hosts.tsv`](recon/2026-08-21-source-referenced-hosts.tsv). Important additional families include Moderato/testnet/devnet RPC and explorers, faucet/sponsor variants, binary download hosts, MPP examples/services, preview account domains, and performance infrastructure. Their DNS, TLS, ownership, environment, and source-to-deployment mappings remain part of T-006.
+The 2026-08-21 non-archived default-branch source index contains **96 distinct `tempo.xyz`-shaped host strings**: 38 current official-source references, 19 current MPP-integration references, 30 non-production or historical environment names, and nine fixtures or malformed strings. They are discovery candidates, not 96 production services. The August 23 authoritative wildcard controls found no general `*.tempo.xyz` address wildcard but did confirm `*.mpp.tempo.xyz`; MPP names sharing the wildcard edge therefore are not independently confirmed deployments. The complete source-only index is [`recon/2026-08-21-source-referenced-hosts.tsv`](recon/2026-08-21-source-referenced-hosts.tsv), and current DNS/TLS/HTTP/port results are in [`evidence/2026-08-23-public-perimeter.txt`](evidence/2026-08-23-public-perimeter.txt).
 
 ## Data consistency and verification surface
 
@@ -219,13 +225,17 @@ Users and applications may rely on different views from the node RPC, `tidx`, Ex
 | Boundary | Tempo-controlled side | Authority or data crossing the boundary | Scope limit |
 | --- | --- | --- | --- |
 | GitHub | Repositories, Actions, Apps, releases, packages | Source, review, CI identity, OIDC, secrets, tags, artifacts | Private organization controls are not visible |
+| GitHub App STS | GitHub OIDC subjects and repository policy files | Short-lived `contents`/PR tokens returned by an external STS/App boundary | STS ownership, deployment, App governance and audit are not public; endpoint was not scanned |
 | Cloudflare | Workers, routes, R2, DNS/CDN and API tokens | Production code, APIs, wallet binaries, secrets and traffic routing | Do not test unrelated Cloudflare infrastructure |
 | Vercel | Website/docs/auth deployments and custom domains | Trusted `tempo.xyz` origins and deployment identity | Account/project ownership requires Tempo confirmation |
 | Registries | GHCR, Docker Hub, npm, crates.io, PyPI and Go proxies | Installable code, mutable tags, dependency resolution and maintainer identity | Registry-account controls are not public |
 | Bridge.xyz / Stripe | Bridge/card/reserve and wallet-backed payment integration | Customer, issuance, routing, KYC/card and reserve-related authority | Review only Tempo's integration boundary |
 | Privy and other wallet/auth providers | Sponsor/auth integrations referenced in source | Authentication or fee-payer trust depending on deployment | Do not enumerate provider tenants beyond public Tempo config |
-| Slack, Anthropic, AWS STS/OIDC | CI/release/support automation | Notifications, generated changelogs, temporary tokens and automation actions | Secret scopes and enterprise controls are unknown |
+| Google Workspace, Mailgun and Slack | Mail, customer-facing Tipbot, CI/docs automation | Recovery, trusted communications, OAuth app authority, notifications and feedback | DMARC rejects are public; tenant MFA, app, forwarding, retention and token controls are unknown |
+| Tailscale and Cloudflare Dashboard SSO | Domain verification plus Tailscale-aware source paths | Workforce/admin access and trusted-CIDR/origin assumptions if deployed | Domain verification does not prove enforcement, ACLs, posture or reachable private services |
+| Anthropic, AWS/GCP OIDC and Depot | CI/release/benchmark automation | Generated changelogs, temporary cloud tokens, private source and third-party runners | Cloud trust policies, runner isolation and effective scopes are unknown |
 | Grafana Cloud / Pyroscope | Experimental node profiling and observability | Profile telemetry, service quota, and monitoring integrity; see OBS-002 | Public branch source does not establish token validity or scope |
+| Better Stack and other observability | Status page, browser reporting, logs/metrics/traces | Incident visibility, telemetry and public status communications | Tenant access, ingestion policy, alert routing and retention are unknown |
 | Reth, Commonware, Foundry, viem and language ecosystems | Upstream dependencies and forks | Consensus/execution/toolchain behavior and build inputs | Upstream projects are reviewed only where consumed by Tempo |
 | Ledger | Hardware-wallet application and review/distribution | Transaction display, signing semantics and app provenance | Ledger's unrelated internal systems are out of scope |
 
@@ -266,6 +276,7 @@ Recovery must assume a compromised identity may have created a second foothold. 
 - Fork pull requests do not receive ordinary repository secrets under GitHub's documented model.
 - Extensive component tests exist for native precompiles, EVM integration, and Zones.
 - Mainnet and Moderato RPC endpoints answer with their documented chain IDs.
+- Google Workspace MX and rejecting DMARC are published; source and DNS establish operational Slack and Tailscale relationships without exposing private policy.
 
 ### Not established externally
 
@@ -276,6 +287,7 @@ Recovery must assume a compromised identity may have created a second foothold. 
 - mandatory hardware-backed MFA, two-person release/cloud/DNS approval, and break-glass governance;
 - authoritative mapping from every source repository/tag to every deployed service/package;
 - current ownership and lifecycle of all `tempo.xyz` SaaS custom domains;
+- workforce IdP, Gmail/Slack/Tailscale tenant controls, GitHub STS ownership, App governance, and cross-provider recovery procedures;
 - affected user counts, balances, allowances, update uptake and downstream consumers;
 - whether any candidate is already known privately, accepted, mitigated, or remediated.
 
@@ -302,3 +314,6 @@ Update this file whenever a material asset, deployment, trust boundary, or findi
 - [Public repository manifest](recon/2026-08-21-public-repositories.csv)
 - [Source-referenced host index](recon/2026-08-21-source-referenced-hosts.tsv)
 - [Secret-scan report](recon/2026-08-21-public-repository-secret-scan.md)
+- [2026-08-23 public-perimeter evidence](evidence/2026-08-23-public-perimeter.txt)
+- [2026-08-23 communications and DevOps evidence](evidence/2026-08-23-comms-devops-exposure.txt)
+- [2026-08-23 GitHub-controls evidence](evidence/2026-08-23-github-controls.txt)

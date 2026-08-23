@@ -1,0 +1,516 @@
+# Tempo public GitHub governance and PR attack surface
+
+Observation date: 2026-08-23
+Live collection window: 2026-08-23T14:20:29Z–2026-08-23T14:23:04Z
+Organization: https://github.com/tempoxyz
+Method: public GitHub REST/HTML, the read-only GitHub connector, and local inspection of exact public default-branch commits
+
+## Safety and evidentiary boundary
+
+This was read-only public research. No pull request, issue, comment, review, reaction,
+branch, tag, workflow run, release, environment, package, token exchange, or repository
+setting was created or modified. No secret value was requested or accessed.
+
+Public GitHub data does not expose private repositories, organization owners, private
+teams, collaborators, deploy keys, installed GitHub Apps, custom roles, Actions
+allowlists/default-token settings, secret values/scopes, runner networking or teardown,
+audit logs, SSO/MFA state, or every environment setting. A source reference to
+`secrets.*` or a declared write permission is a capability lead, not proof that a
+particular run received a secret or effective write token.
+
+## Executive conclusions
+
+- GitHub returned 68 public repositories: 52 originals, 16 forks, 15 archived,
+  53 active, and 48 active originals.
+- All active public repositories provide the ordinary GitHub fork-to-pull-request
+  contribution path. The 15 archived repositories are read-only. An outsider fork PR
+  is materially different from a same-repository branch/PR created by a writer.
+- 67/68 current default branches report `protected: true`. `txgen/main` alone reports
+  `protected: false`. `tip.bot/main` is protected and exposes five required check
+  contexts even though its ruleset-list endpoint returns no ruleset.
+- All 53 active repositories' public ruleset lists were refreshed. Fifty-one inherit
+  active organization branch ruleset `12500570`; only `tip.bot` and `txgen` returned
+  no ruleset. Across the 64 returned records, every target is `branch`: there is no
+  public active or disabled tag ruleset in the active-repository snapshot.
+- The active originals contain 203 workflow files in 34 repositories. Of those,
+  99 use `pull_request`, 11 use `pull_request_target`, nine use `issue_comment`, one
+  uses `workflow_run`, 31 use `workflow_call`, and 14 have tag-push filters.
+- Among active-original workflows, 98 files in 30 repositories reference a secrets
+  context, 114 files in 30 repositories declare at least one write permission, and
+  47 files in 17 repositories declare `id-token: write`. These overlap and must be
+  evaluated per event/job; they are not 98 confirmed secret exposures.
+- Three current workflows contain a literal self-hosted runner selection:
+  `tempo/bench-e2e.yml`, `tempo/bench-replay.yml`, and
+  `zones/zones-benchmark.yml`. Tempo's two are reached through a member-gated
+  issue-comment benchmark dispatcher; Zones' benchmark is schedule/dispatch based.
+- The public environment-detail sample from 2026-08-21 returned 40 environments
+  across 12 of 18 queried high-value repositories and found required reviewers on
+  only one of them. Tempo `release` and
+  `release-pr` had branch-policy gates but no reviewer rule; wallet-cli and wallet-rs
+  `release` had no protection rule. Today's settings-detail refresh hit GitHub's
+  unauthenticated API limit, so those reviewer facts are dated, not asserted as live.
+- Current source has replaced several stored GitHub App credentials with OIDC-backed
+  GitHub STS: Tempo PR #7279, wallet-cli PR #99, and wallet-rs PR #525. This is a real
+  reduction in long-lived credential exposure. The inspected workflow and ruleset
+  source does not show a tag ruleset or an independent release-environment reviewer.
+
+## Exact public requests and reproducible commands
+
+Inventory request (HTTP 200; response `Date: Sun, 23 Aug 2026 14:20:55 GMT`):
+
+```text
+GET https://api.github.com/orgs/tempoxyz/repos?type=public&per_page=100&sort=full_name&direction=asc
+Accept: application/vnd.github+json
+X-GitHub-Api-Version: 2022-11-28
+
+jq '{count:length,
+     archived:map(select(.archived))|length,
+     forks:map(select(.fork))|length,
+     active_nonfork:map(select((.archived|not) and (.fork|not)))|length}' repos.json
+
+=> {"count":68,"archived":15,"forks":16,"active_nonfork":48}
+```
+
+Default-branch request applied to each inventory row (68/68 resolved; the slash in
+`mpp-e2b` was URL encoded):
+
+```text
+GET https://api.github.com/repos/tempoxyz/{repo}/branches/{urlencoded_default_branch}
+
+recorded fields:
+  .name
+  .commit.sha
+  .protected
+  .protection.required_status_checks.contexts
+```
+
+Ruleset request applied to all 53 non-archived repositories (53 HTTP 200 responses;
+last response `Date: Sun, 23 Aug 2026 14:23:04 GMT`):
+
+```text
+GET https://api.github.com/repos/tempoxyz/{repo}/rulesets
+
+recorded fields:
+  .[].id
+  .[].name
+  .[].target
+  .[].source_type
+  .[].enforcement
+  .[].updated_at
+```
+
+Current workflow and CODEOWNERS inventory was derived without executing repository
+code:
+
+```text
+git --git-dir=target/public-repos/{repo} rev-parse HEAD
+git --git-dir=target/public-repos/{repo} ls-tree -r --name-only HEAD -- .github/workflows
+git --git-dir=target/public-repos/{repo} show HEAD:.github/workflows/{workflow}
+git --git-dir=target/public-repos/{repo} ls-tree -r --name-only HEAD -- \
+  CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS
+```
+
+GitHub semantics used to distinguish trust boundaries:
+
+- https://docs.github.com/en/actions/concepts/security/compromised-runners
+- https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows
+- https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository
+- https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
+
+GitHub documents that ordinary public fork `pull_request` runs receive a read-only
+`GITHUB_TOKEN` and no Actions secrets. It separately warns that a `workflow_run`
+workflow may receive secrets and write tokens even when the preceding workflow did
+not. Base-repository events such as `pull_request_target` and `issue_comment` require
+source-specific review because they can have base-repository authority.
+
+## Repository and pull-request ingress
+
+The ordinary external contribution path is:
+
+```text
+outside user -> public fork -> branch in outsider fork -> PR to active Tempo repo
+```
+
+That path can propose changes to source and workflow YAML, but an ordinary
+`pull_request` run from the public fork is secretless/read-only under GitHub's model.
+First-time contributor workflow execution can require maintainer approval; Tempo's
+exact organization approval policy is not public.
+
+A different path exists after compromise or abuse of a collaborator, organization
+member, GitHub App, deploy key, or other writer:
+
+```text
+write-capable identity -> branch inside tempoxyz repo -> same-repo PR/event
+```
+
+The fork downgrade does not protect that path. Source-declared write scopes, OIDC,
+repository/environment secrets, member-only comment dispatchers, and privileged
+reusable workflows must be evaluated as potentially reachable unless a separate
+job/environment/identity gate proves otherwise. Branch review protects merges; it
+does not automatically protect pre-merge jobs that execute same-repository PR code.
+
+## Branch protection and rulesets
+
+Current public results:
+
+```text
+default branches queried                   68
+protected                                  67
+unprotected                                 1  txgen/main
+active repositories queried for rulesets   53
+active repos inheriting org rule 12500570  51
+active repos with no returned ruleset        2  tip.bot, txgen
+returned ruleset records                    64
+active ruleset records                      62
+disabled ruleset records                     2
+branch-targeted records                     64
+tag-targeted records                         0
+```
+
+Organization rule `12500570` is named `[Global] Block Direct Push to Default Branch
++ Enforce Squash/Rebase Only`, is active, and was updated
+`2026-08-21T20:43:40.377Z`. Its public GitHub page exposes deletion restriction,
+pull-request-before-merge, and force-push blocking. The list endpoint does not expose
+approval counts or bypass actors.
+
+Additional active repository rules were returned for docs, gh-actions, mpp,
+mpp-specs, pympp, tempo (two), tempo-apps, wallet-rs, and zones (two). Disabled rules
+were returned for tempo-apps (`Code Quality Copilot review for default branch`) and
+wallet-cli (`Main`). No ruleset record targets tags.
+
+Visible required status contexts from the branch-summary endpoint:
+
+```text
+tempo/main       lint success | test success | specs success
+tempo-std/master ci-success
+tip.bot/main     Check / Verify | Check / Test Unit | Check / Test Workers |
+                 Check / E2E | zizmor
+```
+
+No visible context in this endpoint is not proof that no check or review applies.
+Tempo repository rule `8300020` was last updated `2026-06-09T22:13:23.162Z`; a
+detailed public API capture on 2026-08-21 found one required approval plus checks.
+Because that ruleset's `updated_at` is unchanged in today's list, that is strong but
+not independently refreshed evidence for the review count. Other repositories'
+review counts, dismissal behavior, code-owner requirement, and bypass actors remain
+unknown unless explicitly visible in a detailed rule response.
+
+## Workflow trigger and authority inventory
+
+All 68 current default branches:
+
+```text
+workflow files / repositories       446 / 52
+pull_request                         187 / 49 repos
+pull_request_target                   13 / 8 repos
+issue_comment                          9 / 7 repos
+workflow_run                          10 / 10 repos
+workflow_call                         56 / 25 repos
+release event                          7 / 7 repos
+push                                 204 / 51 repos
+workflow_dispatch                    199 / 42 repos
+schedule                             120 / 29 repos
+merge_group                           76 / 16 repos
+tag-filtered push                     39 / 21 repos
+secret-context reference             232 / 47 repos
+declared write permission            235 / 45 repos
+id-token: write                       83 / 31 repos
+self-hosted literal                    3 / 2 repos
+```
+
+Active originals only (the production-relevance review set):
+
+```text
+workflow files / repositories       203 / 34
+pull_request                          99
+pull_request_target                   11 / 7 repos
+issue_comment                          9 / 7 repos
+workflow_run                           1 / 1 repo
+workflow_call                         31 / 11 repos
+release event                          2 / 2 repos
+tag-filtered push                     14 / 10 repos
+secret-context reference              98 / 30 repos
+declared write permission            114 / 30 repos
+id-token: write                       47 / 17 repos
+environment declaration               27 / 14 repos
+self-hosted literal                    3 / 2 repos
+```
+
+Active-original `pull_request_target` workflows:
+
+```text
+mpp/.github/workflows/changed-services.yml
+mpp/.github/workflows/dependabot.yml
+mpp/.github/workflows/pr-label.yml
+mpp/.github/workflows/service-pr-guide.yml
+mpp-go/.github/workflows/dependabot.yml
+mpp-specs/.github/workflows/dependabot.yml
+mpp-specs/.github/workflows/pr-preview-cleanup.yml
+tempo/.github/workflows/pr-audit.yml
+tempo-evals/.github/workflows/static-checks.yml
+wallet-rs/.github/workflows/changelog-generate.yml
+zones/.github/workflows/pr-audit.yml
+```
+
+Active-original `issue_comment` workflows:
+
+```text
+accounts/.github/workflows/pr-audit.yml
+mpp-tools/.github/workflows/agricola.yml
+tempo/.github/workflows/bench.yml
+tempo/.github/workflows/build-devnet.yml
+tempo/.github/workflows/pr-audit.yml
+tidx/.github/workflows/pr-audit.yml
+wallet-cli/.github/workflows/pr-audit.yml
+wallet-rs/.github/workflows/pr-audit.yml
+zones/.github/workflows/pr-audit.yml
+```
+
+The single active-original `workflow_run` file is
+`mpp-specs/.github/workflows/pr-comment.yml`; it declares `contents: write` and
+`pull-requests: write` and references secrets. Its artifact/input handling deserves
+the same privileged-follow-up review GitHub recommends for `workflow_run` designs.
+
+## Self-hosted runners
+
+Current literal matches:
+
+```text
+tempo@d656ef5581505b59f1611b358e611f5a602d399e
+  .github/workflows/bench-e2e.yml
+  .github/workflows/bench-replay.yml
+
+zones@7e38642cdd5a1500784fd15cf30eda5366f3350a
+  .github/workflows/zones-benchmark.yml
+```
+
+Tempo's default-branch `bench.yml` receives issue comments, checks organization
+membership for both PR author and commenter, resolves the PR head, and calls the
+self-hosted workflows. Public history demonstrates this route operates on runner
+group `tempo-bench`. This is a deliberate member boundary, not an external-fork
+bypass. A compromised single member can author and comment on their own PR; runner
+ephemerality, network isolation, retained state, and cross-job reach are private.
+
+Zones' self-hosted benchmark is reached by schedule or manual dispatch, not by its
+ordinary PR workflow in the current source.
+
+## Release and deployment entrypoints
+
+There are no returned tag rulesets, while these 14 active-original workflows have
+tag-push filters:
+
+```text
+changelogs/.github/workflows/binary.yml
+mpp-go/.github/workflows/release.yml
+mpp-irl/.github/workflows/container.yml
+rpc-tester/.github/workflows/release.yml
+tempo/.github/workflows/bench-e2e-scheduled.yml
+tempo/.github/workflows/docker.yml
+tempo/.github/workflows/release.yml
+tempo-go/.github/workflows/release.yml
+tidx/.github/workflows/binary.yml
+tidx/.github/workflows/docker.yml
+wallet-cli/.github/workflows/build.yml
+wallet-rs/.github/workflows/build.yml
+zones/.github/workflows/docker.yml
+zones/.github/workflows/release.yml
+```
+
+High-value paths:
+
+1. Tempo node/container release at
+   `d656ef5581505b59f1611b358e611f5a602d399e`:
+   - `docker.yml` accepts `v*.*.*`, declares `packages: write` and
+     `id-token: write`, authenticates to GHCR and Docker Hub, and has no GitHub
+     Environment declaration on the publish job.
+   - `release.yml` accepts `v*.*.*`. `build-release` enters `release` and uses
+     GPG signing secrets; `create-release` has `contents: write`; the R2 upload uses
+     R2 secrets outside an environment. `bump-main-cargo-version` enters
+     `release-pr` and now mints a scoped GitHub STS token.
+   - PR #7279/current head replaced `RELEASE_BOT_*` App secrets with the pinned
+     STS action and committed `.github/sts/release-pr.sts.yaml`. This is a positive
+     current change; tag creation remains outside a returned tag rule.
+
+2. Wallet CLI at `5a06c07a76c175667507724da4c0b4ac185df048`:
+   - `build.yml` accepts `v*`; its `publish` job enters `release`, uploads GitHub
+     release assets, loads the release-signing key, signs binaries/metadata, and
+     writes to R2.
+   - `release.yml` is a main-push/manual release-PR and release orchestrator; its
+     release job enters `release` and can create a tag and GitHub release targeting
+     `main`.
+   - PR #99/current head changed changelog generation from stored App credentials to
+     OIDC GitHub STS. The tag-triggered build/publish path remains.
+
+3. Wallet Rust at `7801e796b8239514d7d8544cc1c32bfe4795d810`:
+   - `build.yml` accepts `v*` and publishes through `release` with signing and R2
+     authorities.
+   - PR #525/current head replaces release automation App credentials with GitHub
+     STS. It does not add a tag-targeting rule.
+
+4. Application/cloud entrypoints include accounts' Cloudflare worker deployment,
+   tempo-apps Pages/preview flows, tip.bot preview/production Wrangler flows,
+   MPP service deployment, PyPI/npm/crates publication, GHCR containers, GitHub
+   Releases, and Pages. Public workflow source identifies the credential name and
+   job boundary, not the secret's actual scope or whether a deployment is production.
+
+## Environment and reviewer evidence
+
+Current source contains 39 environment-declaring workflow files across 25 public
+repositories; 27 files across 14 active originals. Examples include `release`,
+`release-pr`, `production`, `preview`, `npm`, `pypi`, `github-pages`, and dynamic
+Cloudflare environments.
+
+The latest complete public settings-detail sample in the workspace was collected on
+2026-08-21 for 18 high-value repositories:
+
+```text
+repositories queried                 18
+environments returned                40 across 12 repos
+required-reviewer rules               1
+wait-timer rules                       0
+branch-policy rules                    4
+environments with admin bypass false   3
+```
+
+Relevant sample rows:
+
+```text
+tempo/release      updated 2026-02-06  admin bypass false  branch_policy only
+tempo/release-pr   updated 2026-05-01  admin bypass false  branch_policy only
+wallet-cli/release updated 2026-06-17  admin bypass true   no protection rules
+wallet-rs/release  updated 2026-05-04  admin bypass true   no protection rules
+tempo-go/releases  updated 2026-03-23  admin bypass true   3 user reviewers;
+                                                        prevent_self_review=false
+```
+
+The Tempo release environments' sampled custom branch policies admitted release-tag
+patterns; they did not show `required_reviewers`. Today’s current source also refers
+to a new `add-hardfork` environment created during PR #7279. Environment-setting
+requests on 2026-08-23 returned GitHub `403 API rate limit exceeded` after the
+complete repository/branch/ruleset collection, so reviewer state above must remain
+explicitly dated 2026-08-21. Do not present it as confirmed-current without an
+authenticated owner-side export or a later public refresh.
+
+## CODEOWNERS
+
+Seventeen current default branches contain a CODEOWNERS file in one of GitHub's
+recognized locations:
+
+```text
+foundry, foundry-1, foundry-2, foundry-tempo-pr, mpp-rs,
+reth, reth-1, reth-2, reth-3, reth-4, revm-inspectors,
+tempo, tempo-foundry, tempo-std, ungoogled-chromium-mpp, viem, zones
+```
+
+Only four active originals have CODEOWNERS: `mpp-rs`, `tempo`, `tempo-std`, and
+`zones`. Wallet-cli, wallet-rs, accounts, tempo-apps, gh-actions, tip.bot, and txgen
+do not have a CODEOWNERS file on their current default branch. CODEOWNERS existence
+does not itself prove that code-owner review is required by a branch rule.
+
+## Full repository control matrix
+
+Legend:
+
+```text
+PR    pull_request                 PRT   pull_request_target
+IC    issue_comment                WR    workflow_run
+WC    workflow_call                REL   release event
+TAG   tag-filtered push            SEC   secrets-context reference
+WRITE declared write permission    OIDC  id-token: write
+SELF  self-hosted literal          ENV   environment declaration
+```
+
+`Rules` describes the live ruleset-list response for active repositories. Archived
+repositories' ruleset lists were not refreshed; their current branch `protected`
+boolean was. `Checks` contains only contexts visible in the public branch summary.
+
+| Repository | Class | Default / head | Outside PR path | Protected | Rules | Visible checks | WF | Workflow flags | CODEOWNERS |
+| --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- |
+| `.github` | active/original | `main` / `9cf516057b12` | fork PR | yes | global | - | 0 | - | no |
+| `accounts` | active/original | `main` / `bff90b590894` | fork PR | yes | global | - | 7 | PR, IC, WC, SEC, WRITE, OIDC, ENV | no |
+| `accounts-sdk-duplicate-iframe-repro` | archived/original | `main` / `7563bfce363a` | closed (archived) | yes | not refreshed | - | 0 | - | no |
+| `agents-tempo-xyz` | active/original | `main` / `f0c15788448c` | fork PR | yes | global | - | 0 | - | no |
+| `appkit-wagmi-tempo-wallet` | active/original | `main` / `d78584366a74` | fork PR | yes | global | - | 0 | - | no |
+| `benchmarkoor-replay` | active/original | `main` / `555cbdbad2dc` | fork PR | yes | global | - | 1 | PR | no |
+| `bridgerton` | active/original | `master` / `a6d219a77e7f` | fork PR | yes | global | - | 1 | SEC, WRITE | no |
+| `cf-template-proxy` | active/original | `main` / `03517e5e6ec6` | fork PR | yes | global | - | 0 | - | no |
+| `chains` | archived/fork | `master` / `b0a998134641` | closed (archived) | yes | not refreshed | - | 8 | PR, PRT, SEC | no |
+| `changelogs` | active/original | `master` / `a19f62e3fdbd` | fork PR | yes | global | - | 4 | PR, TAG, SEC, WRITE | no |
+| `ci` | active/original | `main` / `934b6a6317ac` | fork PR | yes | global | - | 3 | PR, WC, SEC, WRITE | no |
+| `docs` | active/original | `main` / `df7543408bee` | fork PR | yes | global; main | - | 4 | PR, SEC, WRITE | no |
+| `examples` | active/original | `main` / `d7fed7b99f26` | fork PR | yes | global | - | 0 | - | no |
+| `execution-payloads-benchmarks` | active/fork | `main` / `ff0b4b1e6c4d` | fork PR | yes | global | - | 0 | - | no |
+| `export-tempo` | active/original | `main` / `3be69b7030ce` | fork PR | yes | global | - | 3 | PR, WC, SEC, WRITE, OIDC | no |
+| `foundry` | archived/fork | `master` / `3b3ae8bc7b15` | closed (archived) | yes | not refreshed | - | 12 | PR, WR, WC, TAG, SEC, WRITE, OIDC, ENV | yes |
+| `foundry-1` | archived/fork | `master` / `1962f8bd5a06` | closed (archived) | yes | not refreshed | - | 12 | PR, WR, WC, TAG, SEC, WRITE, OIDC, ENV | yes |
+| `foundry-2` | archived/fork | `master` / `1962f8bd5a06` | closed (archived) | yes | not refreshed | - | 12 | PR, WR, WC, TAG, SEC, WRITE, OIDC, ENV | yes |
+| `foundry-tempo-pr` | archived/fork | `master` / `1962f8bd5a06` | closed (archived) | yes | not refreshed | - | 12 | PR, WR, WC, TAG, SEC, WRITE, OIDC, ENV | yes |
+| `frenchy` | active/original | `main` / `6531acec7d83` | fork PR | yes | global | - | 0 | - | no |
+| `gh-actions` | active/original | `main` / `dd1014bf8244` | fork PR | yes | global; main | - | 11 | PR, WC, SEC, WRITE, ENV | no |
+| `hermes-mpp` | active/original | `main` / `5a453e8cf243` | fork PR | yes | global | - | 5 | PR, SEC, WRITE, OIDC, ENV | no |
+| `incur-rs` | active/original | `main` / `47a900cc8753` | fork PR | yes | global | - | 0 | - | no |
+| `ledger-app-tempo` | active/original | `main` / `4711f1c56323` | fork PR | yes | global | - | 0 | - | no |
+| `lints` | active/original | `main` / `03cac25d02c1` | fork PR | yes | global | - | 3 | PR, REL, SEC, WRITE, OIDC | no |
+| `metrics-derive` | active/original | `main` / `fcb3676f1b19` | fork PR | yes | global | - | 1 | PR | no |
+| `mpp` | active/original | `main` / `2f8740e55097` | fork PR | yes | global; Main | - | 11 | PR, PRT, SEC, WRITE, ENV | no |
+| `mpp-discovery-mcp` | archived/original | `main` / `552839d8e5e6` | closed (archived) | yes | not refreshed | - | 4 | PR, WC, SEC | no |
+| `mpp-e2b` | active/original | `georgios/initial-setup` / `9979cb61127b` | fork PR | yes | global | - | 0 | - | no |
+| `mpp-go` | active/original | `main` / `8dd5e00a620c` | fork PR | yes | global | - | 8 | PR, PRT, TAG, SEC, WRITE | no |
+| `mpp-irl` | active/original | `main` / `20079f6fe6a4` | fork PR | yes | global | - | 1 | PR, TAG, SEC, WRITE, OIDC | no |
+| `mpp-proxy-cf` | active/original | `main` / `4f86d874687e` | fork PR | yes | global | - | 0 | - | no |
+| `mpp-rs` | active/original | `main` / `50a0845f9d7f` | fork PR | yes | global | - | 9 | PR, WC, SEC, WRITE, OIDC, ENV | yes |
+| `mpp-specs` | active/original | `main` / `3fa03a9385fb` | fork PR | yes | global; Main | - | 7 | PR, PRT, WR, SEC, WRITE, OIDC, ENV | no |
+| `mpp-tools` | active/original | `main` / `7dea53bb30a1` | fork PR | yes | global | - | 8 | PR, IC, WC, SEC, WRITE | no |
+| `openclaw-mpp` | active/original | `main` / `4e30d5677145` | fork PR | yes | global | - | 2 | PR, SEC, WRITE, OIDC | no |
+| `pathusd-reserves` | active/original | `main` / `6ea927bb5f7b` | fork PR | yes | global | - | 1 | SEC | no |
+| `pg_clickhouse` | active/fork | `main` / `b7c3ec50ac59` | fork PR | yes | global | - | 5 | PR, TAG, SEC, WRITE, OIDC | no |
+| `pympp` | active/original | `main` / `4e5283efcc4b` | fork PR | yes | global; Main | - | 7 | PR, SEC, WRITE, OIDC, ENV | no |
+| `pytempo` | active/original | `main` / `27d8bb534caf` | fork PR | yes | global | - | 3 | PR, SEC, WRITE, OIDC, ENV | no |
+| `reth` | archived/fork | `main` / `3e55c6ca6e95` | closed (archived) | yes | not refreshed | - | 31 | PR, WR, WC, REL, TAG, SEC, WRITE, OIDC, ENV | yes |
+| `reth-1` | archived/fork | `main` / `22a68756c71a` | closed (archived) | yes | not refreshed | - | 31 | PR, WR, WC, REL, TAG, SEC, WRITE, OIDC, ENV | yes |
+| `reth-2` | archived/fork | `main` / `cd816ce211c3` | closed (archived) | yes | not refreshed | - | 30 | PR, WR, WC, REL, TAG, SEC, WRITE, OIDC, ENV | yes |
+| `reth-3` | archived/fork | `main` / `cd816ce211c3` | closed (archived) | yes | not refreshed | - | 30 | PR, WR, WC, REL, TAG, SEC, WRITE, OIDC, ENV | yes |
+| `reth-4` | archived/fork | `main` / `7ff78ca082b2` | closed (archived) | yes | not refreshed | - | 27 | PR, WR, WC, REL, TAG, SEC, WRITE, OIDC, ENV | yes |
+| `revm-inspectors` | active/fork | `main` / `b48f41257a27` | fork PR | yes | global | - | 1 | PR | yes |
+| `rpc-tester` | active/original | `main` / `c7cf9fca2d00` | fork PR | yes | global | - | 2 | PR, TAG, SEC, WRITE | no |
+| `scfuzzbench` | active/fork | `main` / `5ffc457ec2b5` | fork PR | yes | global | - | 6 | PR, WC, SEC, WRITE, OIDC, ENV | no |
+| `schelk` | active/original | `master` / `93522c7a6c8c` | fork PR | yes | global | - | 1 | PR | no |
+| `skills` | active/original | `main` / `56d5e5923f4a` | fork PR | yes | global | - | 0 | - | no |
+| `tempo` | active/original | `main` / `d656ef558150` | fork PR | yes | global; rc restriction; main | lint success; test success; specs success | 36 | PR, PRT, IC, WC, TAG, SEC, WRITE, OIDC, SELF, ENV | yes |
+| `tempo-apps` | active/original | `main` / `5374dff9f01d` | fork PR | yes | global; main; Copilot [disabled] | - | 7 | PR, WC, SEC, WRITE, OIDC, ENV | no |
+| `tempo-evals` | active/original | `main` / `d3b09eb6b2ab` | fork PR | yes | global | - | 4 | PR, PRT, SEC, WRITE | no |
+| `tempo-foundry` | archived/original | `tempo` / `e95b51a3f845` | closed (archived) | yes | not refreshed | - | 7 | PR, WC, SEC, WRITE, OIDC, ENV | yes |
+| `tempo-go` | active/original | `main` / `e1698bf96213` | fork PR | yes | global | - | 4 | PR, TAG, SEC, WRITE, ENV | no |
+| `Tempo-Integrations` | active/original | `main` / `6d400ee3239c` | fork PR | yes | global | - | 0 | - | no |
+| `tempo-maybe-pay` | active/original | `main` / `293d802d3af1` | fork PR | yes | global | - | 0 | - | no |
+| `tempo-std` | active/original | `master` / `c77f1671f7fd` | fork PR | yes | global | ci-success | 2 | PR, REL, WRITE | yes |
+| `tempo-support` | active/original | `main` / `29b168a6be19` | fork PR | yes | global | - | 0 | - | no |
+| `tempo-ts` | archived/original | `main` / `1fc051863a8f` | closed (archived) | yes | not refreshed | - | 4 | PR, WC, SEC, WRITE, OIDC | no |
+| `tidx` | active/original | `main` / `8b4511dd83ff` | fork PR | yes | global | - | 6 | PR, IC, WC, TAG, SEC, WRITE | no |
+| `tip.bot` | active/original | `main` / `e0a88f66bd7e` | fork PR | yes | none returned | Check/Verify; Test Unit; Test Workers; E2E; zizmor | 7 | PR, WC, SEC, WRITE, OIDC, ENV | no |
+| `txgen` | active/original | `main` / `1cda02e0e2a8` | fork PR | no | none returned | - | 3 | PR, SEC, WRITE, OIDC | no |
+| `ungoogled-chromium-mpp` | active/fork | `master` / `f9601858f03e` | fork PR | yes | global | - | 3 | TAG, SEC, WRITE | yes |
+| `viem` | archived/fork | `main` / `697200da5fb9` | closed (archived) | yes | not refreshed | - | 8 | PR, WC, SEC, WRITE, OIDC | yes |
+| `wallet-cli` | active/original | `main` / `5a06c07a76c1` | fork PR | yes | global; Main [disabled] | - | 7 | PR, IC, TAG, SEC, WRITE, OIDC, ENV | no |
+| `wallet-rs` | active/original | `main` / `7801e796b823` | fork PR | yes | global; Main | - | 9 | PR, PRT, IC, TAG, SEC, WRITE, OIDC, ENV | no |
+| `zones` | active/original | `main` / `7e38642cdd5a` | fork PR | yes | global; Protect main; main | - | 15 | PR, PRT, IC, WC, TAG, SEC, WRITE, OIDC, SELF | yes |
+
+## Limitations and owner-side verification requests
+
+1. Export current organization/repository Actions defaults, fork-approval policy,
+   allowed-actions policy, runner groups, and default `GITHUB_TOKEN` permissions.
+2. Export full ruleset details, including bypass actors, required approvals,
+   dismissal rules, last-push approval, and CODEOWNER enforcement; confirm why
+   `txgen/main` is unprotected and how `tip.bot/main` is protected without a returned
+   ruleset.
+3. Export tag protections/rulesets and confirm whether an out-of-band control restricts
+   release-tag creation to a release identity. Public evidence returned none.
+4. Export environment protection rules/reviewers and prevent-self-review settings,
+   especially Tempo `release`, `release-pr`, and `add-hardfork`, and wallet-cli/
+   wallet-rs `release`.
+5. Confirm self-hosted runner ephemerality, single-job isolation, network routes,
+   cache/workspace persistence, and whether release/deployment jobs ever share hosts
+   or credentials with PR/member-controlled jobs.
+6. Inventory installed Apps, deploy keys, STS trust policies/services, package owners,
+   and cloud federation claims. Validate that every token is workflow/ref/environment
+   bound and that revocation/audit logging covers secondary footholds.

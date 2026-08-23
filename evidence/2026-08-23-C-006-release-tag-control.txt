@@ -1,0 +1,104 @@
+Tempo analysis evidence: C-006 release-tag/protected-main control boundary
+Refreshed: 2026-08-23T14:37:48Z
+Evidence type: current public source/control metadata, legitimate public run history, and a local
+no-publication Git ancestry/control model
+Safety: no GitHub write, tag push, workflow trigger, environment entry, registry/R2 request,
+credential use, release, image, signature, or production change
+
+Current source pin
+------------------
+tempoxyz/tempo default branch:
+  d656ef5581505b59f1611b358e611f5a602d399e
+
+Current immutable workflow facts:
+
+- .github/workflows/docker.yml blob
+  0012d3326a61fc13092cb6f336c8ab3c7a8734eb
+  accepts push tags v*.*.*, grants packages:write and id-token:write without a GitHub
+  Environment, derives SemVer plus mutable stable image tags, pushes to GHCR/Docker Hub, and
+  keylessly signs the images.
+
+- .github/workflows/release.yml blob
+  e857fa9b81ae002246829613c9949382d324c8a4
+  accepts push tags v*.*.*. build-release depends on get-version rather than check-version,
+  enters the release environment, builds the tagged source, and uses GPG signing authority.
+  create-release and upload-cloudflare also depend on build-release rather than check-version;
+  the latter publishes to R2.
+
+- The STS source observed in the August 23 refresh (in commits authored August 21) replaces
+  long-lived release-bot App credentials for the auxiliary version-bump PR path. It does not
+  gate tag creation, bind a tag to reviewed main history, or
+  gate Docker/binary publication on check-version.
+
+Current public-control result
+-----------------------------
+The read-only August 23 ruleset inventory returned 64 records across 53 nonarchived public
+repositories: 62 active and two disabled. Every returned ruleset targets branches; zero targets
+tags. Tempo's visible
+repository/default-branch rules require review/checks on protected main/release branch patterns,
+but no public rule returned for release tags.
+
+The latest successful detailed environment API snapshot (2026-08-21) reported only a branch
+policy for Tempo release and release-pr, with no required reviewer or wait/custom gate. The
+August 23 settings-detail refresh was GitHub-rate-limited; private/changed environment controls
+therefore remain possible and are an explicit owner-confirmation item.
+
+Full current inventory and API limitations:
+  evidence/2026-08-23-github-controls.txt
+
+Local no-publication model
+--------------------------
+Purpose: demonstrate that a Git tag can select a commit not reachable from reviewed main and
+still match the current release-trigger pattern. This is a synthetic local repository; it does
+not emulate GitHub permissions or run a Tempo workflow.
+
+Steps:
+
+1. Create local main and commit reviewed.txt.
+2. Create an unreviewed branch and commit artifact.txt.
+3. Tag that unreviewed commit v9.9.9.
+4. Switch back to main and test ancestry plus the current v*.*.* trigger pattern.
+
+Observed result:
+
+  executed=2026-08-23T14:37:48Z
+  main_sha=98e7bb74d1b40220c659c9fb942238a1d67d01df
+  tag_sha=3f9984a8004bd945500e3cce9ebd876c571b508d
+  trigger_match=yes
+  merge_base_is_ancestor_rc=1
+  tag_payload=synthetic-unreviewed-artifact
+
+Exit 1 from git merge-base --is-ancestor means the tag target is not in main history. The tag
+nevertheless matches the workflow's release-tag pattern and carries different source content.
+
+Public reachability/impact evidence
+-----------------------------------
+The legitimate annotated v1.13.1 tag peeled to
+11b2eec62345a9a045d977255a5d93f66114e9e3 and triggered both paths on 2026-08-20:
+
+- Docker run 32366866464 succeeded, including checkout, GHCR/Docker Hub login,
+  build-and-push, cosign, and publication-event steps.
+- Release run 32366866491 completed six release builds with GPG signing and GitHub
+  attestations, created the draft release, and uploaded to R2 before a later auxiliary step
+  failed. The release was subsequently published as v1.13.1.
+
+These legitimate public runs prove that matching tags reach credentialed official-artifact
+publication. They do not show misuse.
+
+Impact demonstrated
+-------------------
+The local model demonstrates that tag reachability and protected-main ancestry are independent.
+Current source shows that the matching tag selects both the code and workflow definition used by
+official image/binary publication. Legitimate run history proves those configured paths operate.
+Under the retained prerequisite—a compromised writer, GitHub App, deploy key, or release identity
+that can create the tag—the public controls do not show an independent review gate requiring the
+tagged commit to be approved main history.
+
+Not demonstrated
+----------------
+- No write-capable identity, tag permission, private organization rule, registry immutability,
+  downstream auto-deployment, or current environment secret was tested.
+- No malicious artifact was built or published.
+- The GitHub release normal path includes a separate publication action; Docker publication and
+  the observed R2/signing steps occur earlier, but exact downstream consumption is unknown.
+- This evidence establishes a current conditional control gap, not exploitation or fund loss.

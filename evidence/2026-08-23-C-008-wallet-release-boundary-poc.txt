@@ -1,0 +1,47 @@
+Tempo analysis evidence: C-008 wallet PR-to-release process-boundary PoC
+Executed: 2026-08-23T14:20Z
+Evidence type: local dummy reproduction using pinned pnpm 11.0.8
+Safety: no GitHub, Anthropic, R2, Tempo, or release write; no real credential
+
+Purpose
+-------
+Demonstrate the current base-workflow route in which PR-controlled package lifecycle code writes
+a fake executable directory to the modeled GITHUB_PATH, and a later git invocation resolves the
+fake executable after the dummy App token is introduced.
+
+Command
+-------
+bash target/supply-chain/repro-wallet-cli-pr-release-secrets/repro.sh
+
+Observed output
+---------------
+Already up to date
+$ bash ./attacker-preinstall.sh
+Done using pnpm v11.0.8
+
+Dummy-only capture:
+argv=push [credential-bearing GitHub HTTPS URL sanitized] HEAD:dummy-branch
+app_token=DUMMY_RELEASE_BOT_TOKEN
+
+Artifact hashes
+---------------
+e2f39f57789adb3b3cc155b57db5435c364fdafd3238452842dfc20d8baed42d  package.json
+17c814b167307942d3609c7b9d916ceddb85839573ab39baa114e30edb132a1a  pnpm-lock.yaml
+ac1616b2b6e1a5d8beed3dbae95e1774faf243bf8c53866d780bc06a636b0d5a  attacker-preinstall.sh
+3207fbadec46254fb22a021e05babdfb74792dc1b7102cc698aa531b5c2cea1f  fake-bin/git
+afb3a2540d2cc8e04671f2583a2083ed0b1e5e32c7a1b9a8f7fc757d1c7c7232  repro.sh
+b179b02af86615bdfa16860ca35b91a7ab6cd7dcaad598c3257fb1ac6a64c57d  capture.txt
+
+Impact demonstrated
+-------------------
+Code executed during dependency installation can influence executable resolution in later steps
+and receive a subsequently introduced token while preserving the expected command shape. Public
+workflow evidence separately ties the same release environment to signing and current-artifact
+publication.
+
+Not demonstrated
+----------------
+- No PR was opened or labeled and no workflow was triggered.
+- No release, signing, R2, GitHub App, or Anthropic credential was accessed.
+- Current secret co-location, rotation, protected private controls, and client population are
+  not publicly observable.

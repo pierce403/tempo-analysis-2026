@@ -1,0 +1,107 @@
+Tempo analysis evidence: C-002 and C-004 local executable-resolution PoC
+Executed: 2026-08-23T14:19Z
+Evidence type: local dummy reproduction
+Safety: no GitHub, Cloudflare, Tempo, or other network request; no real credential
+
+Purpose
+-------
+Demonstrate that the Wrangler resolution form used by the reviewed deployment action can
+execute a repository-workspace binary after a secret is added to the process environment.
+This proves the local process boundary only. Workflow reachability and credential use are
+separate public-configuration observations in the finding reports.
+
+C-002 public workflow/source evidence
+-------------------------------------
+Current tempoxyz/tempo-apps main (confirmed 2026-08-23):
+  5374dff9f01d050be7b9ab8d8d37349cf9506c76
+
+- .github/workflows/pull-request.yml lines 2-5 accepts pull-request events and manual
+  dispatch. Lines 25-39 accept MEMBER, OWNER, or COLLABORATOR PR associations; lines 82-115
+  check out/build PR-influenced code; lines 117-126 invoke the pinned Wrangler action with
+  CLOUDFLARE_API_TOKEN in a PR-selected app working directory. The deploy job declares no
+  GitHub Environment. Workflow SHA-256:
+  757c5b261fbec052821db845bc30f983b23e283ad39e24f3a7e8402b784e40d7
+- The pinned action is cloudflare/wrangler-action@ebbaa1584979 (12-character commit
+  abbreviation; the full pin is in the referenced source). Its immutable bundle sets the Cloudflare values
+  in process.env before resolving/checking Wrangler from the supplied working directory.
+  Bundle SHA-256:
+  271be2c531712086619bb8d230267c30237e56cfa4f097d045c6646095858658
+- .github/workflows/main.yml lines 18-60 passes the same named repository secret to production
+  Explorer, mainnet fee-payer, contract-verification, and key-manager deployments. This proves
+  secret-name/configuration reuse, not the token's private Cloudflare policy.
+- Public run 30842288164 on same-repository PR #1168 reached successful checkout, dependency
+  installation, Worker type generation, build, and authenticated Upload Worker Version steps,
+  including explorer-mainnet job 91782146463. This proves the configured trusted-member route
+  operates; it does not show abuse or unrestricted Cloudflare scope.
+
+C-004 public workflow/source evidence
+-------------------------------------
+Current tempoxyz/accounts main (confirmed 2026-08-23):
+  bff90b590894e074d2cd25e9ee9d5b197813ff33
+
+- .github/workflows/deploy-workers.yml lines 2-6 accepts every pull request, main push, and
+  manual dispatch. Lines 38-55 execute checked-out dependency/local-action/build code; lines
+  59-75 use the same CLOUDFLARE_API_TOKEN for main deployment and PR Worker-version upload.
+  The job declares no Environment, author-association gate, or independent approval. Workflow
+  SHA-256:
+  73a97c8150c875f122dc30629ebdca6d831b1a3355e64efdb790713194869bea
+- The repository-local install action permits lifecycle execution and later branch-controlled
+  build scripts. Composite-action SHA-256:
+  7139588e32d3f6fa0cdc4c3baf0f3953f3e52dfc50b038acb680b69b5bcae032
+- The pinned cloudflare/wrangler-action commit is 9acf94ace14e (12-character abbreviation; the
+  full pin is in the referenced source). Its immutable bundle has the same relevant order:
+  authentication environment setup, then app-directory npx/Wrangler resolution. Bundle SHA-256:
+  7a0f70a778a83a064e4819e1a4baca127c0c8a5fc3c11f1f67ab331a09bee9dd
+- Public run 32402773241 on same-repository PR #773 completed both matrix jobs' checkout,
+  dependency installation, build phases, and authenticated Preview step (jobs 96534650602 and
+  96534650912). This proves route reachability; it does not establish production token scope.
+
+Synthetic executable
+--------------------
+Path: target/supply-chain/repro-wrangler-path/app/node_modules/.bin/wrangler
+SHA-256: a6b898916a6d85f060148f83531e5cecda6fec77276ae19f4695927535577c11
+Behavior: prints a parseable Wrangler version and copies the named dummy environment value
+to a local capture path.
+
+C-002 command
+-------------
+Working directory: target/supply-chain/repro-wrangler-path/app
+
+env CLOUDFLARE_API_TOKEN=DUMMY_TEMPO_APPS_TOKEN_NOT_A_SECRET \
+  REPRO_CAPTURE=/tmp/tempo-report-c002.txt \
+  npx --no-install wrangler --version
+
+Observed stdout:
+wrangler 4.0.0
+
+Observed local capture:
+DUMMY_TEMPO_APPS_TOKEN_NOT_A_SECRET
+
+C-004 command
+-------------
+Working directory: target/supply-chain/repro-wrangler-path/app
+
+env CLOUDFLARE_API_TOKEN=DUMMY_ACCOUNTS_TOKEN_NOT_A_SECRET \
+  REPRO_CAPTURE=/tmp/tempo-report-c004.txt \
+  npx --no-install wrangler --version
+
+Observed stdout:
+wrangler 4.0.0
+
+Observed local capture:
+DUMMY_ACCOUNTS_TOKEN_NOT_A_SECRET
+
+Impact demonstrated
+-------------------
+A repository-controlled executable resolved after environment injection receives the complete
+process environment and can preserve normal-looking tool output. If a same-repository PR can
+control that workspace before a real credential-bearing step, the process boundary does not
+protect the credential from PR code.
+
+Not demonstrated
+----------------
+- No real Cloudflare token was read, validated, or used.
+- No GitHub workflow was triggered.
+- Token scope, rotation state, and production account separation remain private.
+- This transcript does not establish that an outside-fork PR receives secrets; the retained
+  findings require the stated same-repository member/writer path.

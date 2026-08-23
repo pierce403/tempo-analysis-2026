@@ -1,6 +1,6 @@
 # Findings Register
 
-Last updated: **2026-08-21 19:01 UTC** \
+Last updated: **2026-08-23 14:38 UTC** \
 Visibility: tracked, redacted index; detailed candidate reports remain ignored under `findings/`
 
 ## Purpose and handling
@@ -23,10 +23,10 @@ No external disclosure, GitHub issue, PR, workflow trigger, credential test, clo
 | --- | --- | --- | --- | --- | --- |
 | C-005 | P0 | Member PR crosses into raffle escrow key boundary | Locally validated mechanism; live workflow path observed | Direct signing authority over application-held funds if the exposed key is the funded/shared key | Private owner confirmation and coordinated disclosure |
 | C-002 | P0 | Tempo Apps PR code reaches production cloud deploy authority | Locally validated mechanism; authenticated member-PR upload observed | Could modify sponsor, key-manager, explorer, or verifier behavior to redirect or deceive users | Confirm Cloudflare scope/account separation; disclose systemic pattern |
-| C-006 | P1 | Release tags bypass protected-branch review | Source/config validated; legitimate release paths observed | Could publish official signed node/container artifacts from unreviewed code | Confirm private tag controls and downstream consumers |
-| C-008 | P1 | Wallet PR automation reaches release trust root | Dummy-local mechanism; release capability historically observed | Could publish a trusted wallet update that steals or misuses local access keys | Confirm current secret placement and trigger semantics; disclose with C-006 |
-| C-003 | P1 | Scoped key can spend pre-existing ZonePortal allowance beyond its limit | Protocol primitive locally reproduced; deployment/user intent unresolved | A compromised delegated key could move more TIP-20 value than the displayed key budget | Confirm deployed portal state and intended wallet security model |
-| C-009 | P1 investigation | Wallet CLI masks default unrestricted key authority | Output mismatch locally reproduced; current release/schema and public UI observed | A stolen CLI key retains unrestricted calls and may retain full spending while audit output says zero/empty | Confirm hosted limit policy and affected-key population; preserve optional semantics |
+| C-006 | P1 | Release tags bypass protected-branch review | Current source/config validated; legitimate release paths observed | Could publish official signed node/container artifacts from unreviewed code | Confirm private tag controls and downstream consumers |
+| C-008 | P1 | Wallet PR automation reaches release trust root | Current STS/lifecycle path and dummy-local mechanism validated | Could publish a trusted wallet update that steals or misuses local access keys if signing/publication authority is reachable | Confirm environment protection, STS operation, current secret placement, and trigger semantics; disclose with C-006 |
+| C-003 | P1 | Scoped key can spend pre-existing ZonePortal allowance beyond its limit | Protocol primitive locally reproduced; relevant current source unchanged; deployment/user intent unresolved | A compromised delegated key could move more TIP-20 value than the displayed key budget | Confirm deployed portal state and intended wallet security model |
+| C-009 | P1 investigation | Wallet CLI masks default unrestricted key authority | Output mismatch reproduced at current head; hosted policy and affected population unknown | A stolen CLI key retains unrestricted calls and may retain full spending while audit output says zero/empty | Confirm hosted limit policy and affected-key population; preserve optional semantics |
 | C-004 | P2 | Accounts PR code reaches Cloudflare credential | Dummy-local mechanism; member-preview route observed | Could alter an auth/account Worker if the token reaches production resources | Establish token scope and production relationship |
 | C-001 | P2 | Historical `auth.tempo.xyz` deployment anomaly | Live historical observation; current functional site restored | A hostile controller of a trusted auth origin could solicit deceptive wallet authorization | Confirm Vercel/DNS ownership and audit history |
 | C-007 | P3 | `tempo-std` authorization RLP mismatch | Locally reproduced correctness issue | Expected rejection/DoS or integration failure, not an authorization bypass | Identify a production consumer and add cross-language vectors |
@@ -114,12 +114,12 @@ Detailed local report: `findings/C-002-tempo-apps-cloudflare-preview.md`.
 - **Assessment state:** source and public-control candidate
 - **Deployment state:** legitimate release runs prove the publication/signing paths; malicious trigger was not tested
 - **Disclosure state:** ready after private-control check; not sent
-- **Affected asset:** `tempoxyz/tempo` at `86ff4deaebfee38bb0b000e648b2b367810265ff`
-- **Evidence:** workflow source, public ruleset/environment APIs, and successful `v1.13.1` release/container histories
+- **Affected asset:** `tempoxyz/tempo` at current head `d656ef5581505b59f1611b358e611f5a602d399e` (original baseline `86ff4deaebfee38bb0b000e648b2b367810265ff`)
+- **Evidence:** current workflow source and public ruleset inventory, latest successful detailed environment snapshot, successful `v1.13.1` release/container histories, and a local no-publication ancestry model
 
 ### Confirmed mechanism
 
-Important branches require review and checks, but no public tag ruleset was returned. A `v*.*.*` tag triggers container and binary workflows using the tagged commit's source and workflow definition. The container path publishes SemVer and mutable stable images with signing; the release path signs binaries, creates a release, and uploads to R2. Public environment configuration showed no independent reviewer gate capable of substituting for tag protection.
+Important branches require review and checks, but the 2026-08-23 public inventory returned 64 branch-targeted ruleset records (62 active and two disabled) and zero tag-targeted rulesets. A `v*.*.*` tag triggers container and binary workflows using the tagged commit's source and workflow definition. The container path publishes SemVer and mutable stable images with signing; the release path signs binaries, creates a release, and uploads to R2. The latest successful detailed environment snapshot showed no independent reviewer gate capable of substituting for tag protection. Current head replaced one auxiliary stored App-credential path with short-lived GitHub STS, but did not bind release tags to reviewed `main` history or gate the artifact jobs on the version check.
 
 ### How a criminal could use it
 
@@ -144,12 +144,12 @@ Detailed local report: `findings/C-006-unprotected-release-tags-bypass-main-revi
 - **Assessment state:** statically and dummy-locally validated candidate
 - **Deployment state:** legitimate `v0.7.0` signing/publication observed; no public successful privileged changelog run found
 - **Disclosure state:** ready after trigger/secret-placement check; not sent
-- **Affected assets:** `wallet-cli` `677e52278eaafa4ec356ed9c750446fba320cdfa`, `wallet-rs` `5245df47d3ada6a6eecf67342f03919d0123e8fc`, and Tempo launcher `86ff4deaebfee38bb0b000e648b2b367810265ff`
-- **Evidence:** workflow/environment/source inspection, successful historical release jobs, live distribution manifests, launcher/update source, wallet key-storage source, and dummy-only local reproduction
+- **Affected assets:** current `wallet-cli` `5a06c07a76c175667507724da4c0b4ac185df048`, current `wallet-rs` `7801e796b8239514d7d8544cc1c32bfe4795d810`, and current Tempo launcher `d656ef5581505b59f1611b358e611f5a602d399e`; dummy PoC baseline `wallet-cli` `677e52278eaafa4ec356ed9c750446fba320cdfa`
+- **Evidence:** current workflow/STS/environment/source inspection, successful historical release jobs, live distribution manifests, launcher/update source, wallet key-storage source, and dummy-only local reproduction
 
 ### Confirmed mechanism
 
-A label-triggered same-repository pull request enters an unprotected release environment before review, mints a release-bot token, checks out the unmerged PR, and installs its dependencies/lifecycle code. The same release boundary is used to sign wallet extensions and write current binaries/manifests to `cli.tempo.xyz`. The Tempo launcher trusts that host and key and automatically installs or updates extensions; the wallet extension can read the user's locally stored delegated private keys while running as that user.
+A label-triggered same-repository pull request enters the shared release environment before review, requests a short-lived GitHub App token through GitHub OIDC and the external STS, checks out the unmerged PR, and installs its dependencies/lifecycle code before later token/Anthropic consumers. The current source says the replaced stored App wiring was never configured, so the old path is not treated as operational proof. The same named release boundary is used by the separate job that signs wallet extensions and writes current binaries/manifests to `cli.tempo.xyz`. The Tempo launcher trusts that host and key and automatically installs or updates extensions; the wallet extension can read the user's locally stored delegated private keys while running as that user.
 
 ### How a criminal could use it
 
@@ -158,7 +158,7 @@ A criminal with a compromised eligible repository or automation identity could c
 ### Preconditions and limits
 
 - Requires same-repository influence and the relevant label/trigger path.
-- Public evidence cannot prove present secret placement, key rotation, number of updating clients, or balances authorized by local access keys.
+- Public evidence cannot prove a successful STS exchange, current environment protection/secret reachability, key rotation, number of updating clients, or balances authorized by local access keys.
 - The research did not label a PR, trigger a workflow, obtain a secret, or modify an object.
 
 ### Detection and remediation
@@ -174,8 +174,8 @@ Detailed local report: `findings/C-008-wallet-cli-pr-release-secrets.md`.
 - **Assessment state:** protocol primitive locally reproduced; product intent unresolved
 - **Deployment state:** source/local only; current portal deployment and affected account state not established
 - **Disclosure state:** requires product-intent and deployment check; not sent
-- **Affected assets:** Tempo `88b5d7720d29655fdf9025bb14ddcd6bba1f645c` and Zones `acaa6a6734860ecd81d7f01de3c973b068dca2ac`
-- **Evidence:** exact source/spec history, first-party maximum-approval guidance, and focused local native-contract reproduction
+- **Affected assets:** reproduced at Tempo `86ff4deaebfee38bb0b000e648b2b367810265ff` / Zones `acaa6a6734860ecd81d7f01de3c973b068dca2ac`; relevant trees remain byte-identical at current Tempo `d656ef5581505b59f1611b358e611f5a602d399e` / Zones `7e38642cdd5a1500784fd15cf30eda5366f3350a`
+- **Evidence:** exact source/spec history, first-party maximum-approval guidance, focused local native-contract reproduction, and current-head tree comparison
 
 ### Confirmed mechanism
 
@@ -204,8 +204,8 @@ Detailed local report: `findings/C-003-zone-portal-access-key-limit-composition.
 - **Assessment state:** locally validated candidate; reference flow reachable
 - **Deployment state:** current release, protocol, hosted client schema, and read-only public UI assets observed; private server limit policy unknown
 - **Disclosure state:** needs private policy/affected-key confirmation; not sent
-- **Affected assets:** wallet-cli `677e52278eaafa4ec356ed9c750446fba320cdfa`, Accounts 0.16.0 `ce4d2c1e981d443deecd2193d65cdea610478ea6`, and Tempo `86ff4deaebfee38bb0b000e648b2b367810265ff`
-- **Evidence:** pinned cross-repository semantics, upstream localnet vectors, focused wallet-output regression, and passive inspection of current public approval assets
+- **Affected assets:** current wallet-cli `5a06c07a76c175667507724da4c0b4ac185df048` (issue-relevant source unchanged from tested `677e52278eaafa4ec356ed9c750446fba320cdfa`), Accounts 0.16.0 `ce4d2c1e981d443deecd2193d65cdea610478ea6`, and current Tempo `d656ef5581505b59f1611b358e611f5a602d399e`
+- **Evidence:** pinned cross-repository semantics, upstream localnet vectors, current-head focused wallet-output regression, and passive inspection of current public approval assets
 
 ### Confirmed mechanism
 
@@ -269,6 +269,7 @@ Detailed local report: `findings/C-004-accounts-pr-cloudflare-token.md`.
 - 2026-08-14 public third-party observation: `200`, title `Tempo Auth`.
 - 2026-08-21 13:40–13:43 UTC direct observation: catch-all malformed relative redirect naming an unrelated bug-bounty domain.
 - 2026-08-21 16:15 UTC direct recheck: `200`, title `Tempo Auth`, with transaction-signing and access-key routes in the server-rendered route manifest.
+- 2026-08-23 14:17–14:29 UTC direct refresh: `200`, title `Tempo Auth`, still served through the Vercel custom-domain path.
 
 ### Security relevance and criminal use
 
