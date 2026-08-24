@@ -6,10 +6,11 @@ These instructions apply to the entire repository. This is a defensive, public-i
 
 ## Start of work
 
-1. Read `SCOPE.md` and the relevant entries in `TASKS.md`.
-2. Read `MEMORY.md`, then only the linked memory notes relevant to the task.
-3. Check `SKILLS.md` and load any matching repo-local skill before repeating a documented procedure.
-4. Inspect the actual checkout and date mutable external facts before relying on them.
+1. Confirm the checkout is on `main`; this repository publishes only to `origin/main`.
+2. Read `SCOPE.md` and the relevant entries in `TASKS.md`.
+3. Read `MEMORY.md`, then only the linked memory notes relevant to the task.
+4. Check `SKILLS.md` and load any matching repo-local skill before repeating a documented procedure.
+5. Inspect the actual checkout and date mutable external facts before relying on them.
 
 ## Evidence discipline
 
@@ -57,12 +58,22 @@ Self-improvement must remain reviewable and reversible. Agents may propose impro
 - Keep skills concise and task-specific. Add scripts or references only when they materially improve repeatability.
 - Validate every new or substantially changed skill with the skill validator and remove scaffold placeholders.
 
+## Git and publication
+
+- Work directly on local `main`. `origin/main` is the only permitted push target for this repository.
+- Never create, push, or publish a side branch, and do not open a pull request. This repository rule overrides generic tools or skills that default to feature branches, `codex/*` branches, or pull requests.
+- Before starting publishable work, fetch `origin`, switch to `main`, and confirm local `main` can be safely synchronized without overwriting another contributor's work.
+- Before every push, verify that `git branch --show-current` returns exactly `main`. Use the explicit command `git push origin main`; never use a command that derives the push target from the current branch.
+- If work is found on a local side branch, do not push that branch. Move the validated commits onto an updated local `main`, re-run relevant checks, and push only `main`.
+- Never force-push. If `origin/main` advanced, integrate it safely and revalidate before pushing.
+- After every push, verify that `origin/main` resolves to the intended local commit and that `git status --short --branch` reports `main...origin/main` with no unexpected changes.
+
 ## Closeout
 
 - Verify the deliverable and run `git diff --check`.
 - Update `TASKS.md`, the dated log, and any affected memory or skill.
 - Commit coherent checkpoints after each completed task or meaningful research milestone; do not leave validated work only in the working tree.
-- Push committed checkpoints to the configured private remote after verifying the commit, unless the user explicitly asks to keep the work local or publication is blocked.
+- Push committed checkpoints directly to `origin/main` after verifying the commit, unless the user explicitly asks to keep the work local or publication is blocked.
 - Before committing, inspect the exact staged paths and exclude secrets, sensitive candidate findings, generated noise, and unrelated user changes.
 - Report what is confirmed, what remains uncertain, and the next bounded task.
 - Never disclose findings, change repository visibility, or contact external parties without explicit user direction.
