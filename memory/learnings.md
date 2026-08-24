@@ -65,6 +65,15 @@ Use these states:
 - **Evidence**: `recon/2026-08-21-public-repository-secret-scan.md`
 - **Graduation**: Promote into a repository-history scanning skill after the same failure mode recurs.
 
+### L-007 — Test payment ledgers as separate state variables
+
+- **State**: proposed
+- **Tags**: `#payments` `#state-machines` `#testing`
+- **Observed**: 2026-08-24 during the MPP streaming economic-security audit.
+- **Lesson**: Protocol and SDK suites can be green while advertised price, deposit, authorization, delivered value, recorded consumption, and settlement disagree. Model each quantity independently, assert monotonic and cross-ledger loss bounds, and test adversarial gaps at every request-cost, crash, retry, concurrency, and external-settlement boundary.
+- **Evidence**: `recon/2026-08-24-mpp-economic-security-audit.md`
+- **Graduation**: Promote into a payment-channel review skill only after the model recurs in another system or the user explicitly approves it.
+
 ## Active
 
 None.

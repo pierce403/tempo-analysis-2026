@@ -1,0 +1,158 @@
+Tempo MPP C-011 sanitized evidence
+Date: 2026-08-24
+Mode: local signed dummy state and source review only
+
+PINNED REVISIONS
+
+tempoxyz/mpp-rs current reviewed head
+  fadc88c044b9f8700b58d275bb659d403b231e07
+  git description: v0.11.0-73-gfadc88c
+
+published mpp-rs tag v0.11.0
+  e2e27edc17c1f8274bab982f3dc91477fcc01a44
+
+tempoxyz/mpp-specs
+  6de3b4d5d13b4a80310bd80e021c02a4126428e2
+
+FOCUSED CONCURRENCY POC
+
+Command:
+  cargo test --features tempo,server,client \
+    poc_concurrent_same_voucher_authenticates_twice_for_one_increment \
+    -- --nocapture
+
+Result:
+  test protocol::methods::tempo::session_method::tests::
+    poc_concurrent_same_voucher_authenticates_twice_for_one_increment ... ok
+  test result: ok. 1 passed; 0 failed; 1025 filtered out
+
+Test assertions:
+  initial cumulative voucher: 1,000
+  one valid presented cumulative voucher: 2,000
+  concurrent verification/delivery-gate successes: 2
+  final durable cumulative voucher: 2,000
+
+The test uses a real EIP-712 signed voucher and tokio concurrency. Both calls
+capture the same old snapshot, both validate the increment, one atomic update
+advances durable state, and the losing atomic transition returns the new state
+as success rather than reporting replay/CAS loss.
+
+FULL MPP / CONTENT-GATE POC
+
+Command:
+  cargo test --features tempo,server,client \
+    poc_full_mpp_verify_session_crosses_content_gate_twice \
+    -- --nocapture
+
+Result:
+  test protocol::methods::tempo::session_method::tests::
+    poc_full_mpp_verify_session_crosses_content_gate_twice ... ok
+  test result: ok. 1 passed; 0 failed; 1026 filtered out
+
+The stronger deterministic witness runs through real Mpp::verify_session,
+HMAC-bound challenge and credential parsing, real signed-voucher verification,
+and ABI decoding of an Alloy in-process mock getChannel response. A barrier
+forces both refreshes to capture the same old durable state. Both requests pass
+the non-management success predicate used by the bundled multi-fetch content
+gate. Assertions:
+
+  initial durable cumulative voucher: 1,000
+  presented cumulative voucher: 2,000
+  protected-content gate successes: 2
+  final durable cumulative voucher: 2,000
+  final durable spent: 0
+
+No live RPC, service, channel, key, credential, or payment was used.
+
+EXACT CURRENT EXECUTION PATH
+
+src/protocol/methods/tempo/session_method.rs:930-1027
+  handle_voucher obtains/refreshed channel state, then passes the snapshot to
+  voucher acceptance.
+
+src/protocol/methods/tempo/session_method.rs:1341-1381
+  replay/minimum-delta checks run against that pre-update snapshot.
+
+src/protocol/methods/tempo/session_method.rs:1383-1399
+  verifies the real voucher signature.
+
+src/protocol/methods/tempo/session_method.rs:1401-1421
+  atomic update winner advances the voucher. A loser whose amount is now no
+  longer higher returns Ok(Some(state)) as a no-op.
+
+src/protocol/methods/tempo/session_method.rs:1423-1425
+  both branches become success receipts.
+
+src/server/mpp.rs:1105-1170
+  verify_session propagates that success to the application.
+
+examples/session/multi-fetch/src/server.rs:101-137
+  concurrent HTTP requests call verify_session and return protected content for
+  each success. The handler does not atomically debit spent before delivery.
+
+The relevant voucher-acceptance logic and the multi-fetch handler are also
+present in published v0.11.0. The example file is byte-identical between the
+tag and reviewed head, and the focused patch applies cleanly to both.
+
+LOSS BOUND
+
+For N requests that reach validation against the same old snapshot, up to N
+protected responses can satisfy the delivery predicate while voucher value
+advances by one accepted increment delta. If each response has value P,
+uncompensated exposure is:
+
+  max(0, N * P - delta)
+
+When delta correctly prices one response (delta = P), race-only duplicate loss
+is (N - 1) * P.
+
+N is limited by server concurrency and timing. The pattern can repeat with
+successive higher vouchers. No signature forgery or victim payer key is needed;
+the dishonest payer needs its own funded channel and signer.
+
+AFFECTED AND UNDEMONSTRATED PATTERNS
+
+Confirmed:
+  - bundled multi-fetch delivery pattern at current head and v0.11.0;
+  - applications that treat verify_session success as authorization for one
+    paid response without atomically debiting per-request spent;
+  - in-memory and single-process adapter stores. Correct update serialization
+    does not reject the losing request.
+
+Not shown affected by this specific duplicate-delivery path:
+  - bundled SSE, which atomically deducts before each event;
+  - bundled WebSocket session serving, which deducts before each data frame;
+  - applications that perform a linearizable per-request debit before delivery.
+
+PUBLIC PRIOR ART
+
+  d95c787835559e25b25b46fa9e262f33fb1c88cd
+  GHSA-fxc9-7j2w-vx54 / PR #171
+  Fixed earlier multiple-payment bypasses, but not this no-op success branch.
+
+  b609ed0fb8d806afb9e97c8e8c2961d58a701f8e / PR #177
+  Serialized same-channel ChannelStoreAdapter updates. This PoC succeeds with a
+  correctly serialized store.
+
+  3b167f47ef2019f4b6b407828b31d1d9acda57d3 / PR #247
+  Rejects sequential voucher replay against the pre-update snapshot. Concurrent
+  requests still pass that check before the winner advances state.
+
+SPECIFICATION CONFLICT
+
+mpp-specs draft-tempo-session-00.md requires per-channel voucher acceptance and
+balance deduction to be serialized, accounting updates to be linearizable, and
+spent to be persisted before or atomically with delivery. Exact management
+voucher retries can be idempotent, but a replay/no-op must not be mistaken for
+fresh authorization to deliver another paid resource.
+
+REMEDIATION PROPERTY
+
+Combine voucher advancement, request-cost balance validation, and spent debit
+in one linearizable transition. Only its winner may cross the paid-delivery
+gate. Return a distinguishable replay/CAS-loss result to other requests, while
+preserving management-only idempotency separately.
+
+No public endpoint, payment, production server, credential, or third-party
+service was tested. The exact local patch remains in the ignored findings
+directory.

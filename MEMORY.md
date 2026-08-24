@@ -12,9 +12,11 @@ Curated, non-secret context for future work. Read the relevant linked notes rath
 ## Verified snapshots
 
 - [Initial Tempo recon, 2026-08-21](recon/2026-08-21-initial-recon.md)
-- [Current organizational attack surface, 2026-08-21](SURFACE.md)
+- [Current organizational attack surface, 2026-08-24](SURFACE.md)
 - [Pinned public-repository manifest, 2026-08-21](recon/2026-08-21-public-repositories.csv)
 - [Redacted public-history secret-scan report, 2026-08-21](recon/2026-08-21-public-repository-secret-scan.md)
+- [MPP streaming and agent-payment economic-security audit, 2026-08-24](recon/2026-08-24-mpp-economic-security-audit.md)
+- [MPP audit work log, 2026-08-24](memory/logs/2026-08-24.md)
 - [Continuously maintained redacted findings register](FINDINGS.md)
 - [Repository operating-system setup log, 2026-08-21](memory/logs/2026-08-21.md)
 

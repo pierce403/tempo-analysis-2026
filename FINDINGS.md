@@ -1,6 +1,6 @@
 # Findings Register
 
-Last updated: **2026-08-23 14:38 UTC** \
+Last updated: **2026-08-24 18:18 UTC** \
 Visibility: tracked, redacted index; detailed candidate reports remain ignored under `findings/`
 
 ## Purpose and handling
@@ -23,12 +23,15 @@ No external disclosure, GitHub issue, PR, workflow trigger, credential test, clo
 | --- | --- | --- | --- | --- | --- |
 | C-005 | P0 | Member PR crosses into raffle escrow key boundary | Locally validated mechanism; live workflow path observed | Direct signing authority over application-held funds if the exposed key is the funded/shared key | Private owner confirmation and coordinated disclosure |
 | C-002 | P0 | Tempo Apps PR code reaches production cloud deploy authority | Locally validated mechanism; authenticated member-PR upload observed | Could modify sponsor, key-manager, explorer, or verifier behavior to redirect or deceive users | Confirm Cloudflare scope/account separation; disclose systemic pattern |
-| C-006 | P1 | Release tags bypass protected-branch review | Current source/config validated; legitimate release paths observed | Could publish official signed node/container artifacts from unreviewed code | Confirm private tag controls and downstream consumers |
-| C-008 | P1 | Wallet PR automation reaches release trust root | Current STS/lifecycle path and dummy-local mechanism validated | Could publish a trusted wallet update that steals or misuses local access keys if signing/publication authority is reachable | Confirm environment protection, STS operation, current secret placement, and trigger semantics; disclose with C-006 |
-| C-003 | P1 | Scoped key can spend pre-existing ZonePortal allowance beyond its limit | Protocol primitive locally reproduced; relevant current source unchanged; deployment/user intent unresolved | A compromised delegated key could move more TIP-20 value than the displayed key budget | Confirm deployed portal state and intended wallet security model |
-| C-009 | P1 investigation | Wallet CLI masks default unrestricted key authority | Output mismatch reproduced at current head; hosted policy and affected population unknown | A stolen CLI key retains unrestricted calls and may retain full spending while audit output says zero/empty | Confirm hosted limit policy and affected-key population; preserve optional semantics |
+| C-006 | P1 | Release tags bypass protected-branch review | August 23 source/config validated; legitimate release paths observed | Could publish official signed node/container artifacts from unreviewed code | Confirm private tag controls and downstream consumers |
+| C-008 | P1 | Wallet PR automation reaches release trust root | August 23 STS/lifecycle path and dummy-local mechanism validated | Could publish a trusted wallet update that steals or misuses local access keys if signing/publication authority is reachable | Confirm environment protection, STS operation, current secret placement, and trigger semantics; disclose with C-006 |
+| C-003 | P1 | Scoped key can spend pre-existing ZonePortal allowance beyond its limit | Protocol primitive locally reproduced; relevant August 23 source unchanged; deployment/user intent unresolved | A compromised delegated key could move more TIP-20 value than the displayed key budget | Confirm deployed portal state and intended wallet security model |
+| C-010 | P1 investigation | MPP streaming headroom can become payment for undelivered value | TypeScript and Rust paths reproduced; native reserve interface/constants observed read-only; public prior art is partial | A malicious or compromised paid endpoint can obtain an enforceable full-deposit voucher before delivering the priced stream | Confirm accepted-risk model and deployed source identity; review ordinary/scheduled settlement with the earlier close fix |
+| C-009 | P1 investigation | Wallet CLI masks default unrestricted key authority | Output mismatch reproduced at the August 23 reviewed head; hosted policy and affected population unknown | A stolen CLI key retains unrestricted calls and may retain full spending while audit output says zero/empty | Confirm hosted limit policy and affected-key population; preserve optional semantics |
 | C-004 | P2 | Accounts PR code reaches Cloudflare credential | Dummy-local mechanism; member-preview route observed | Could alter an auth/account Worker if the token reaches production resources | Establish token scope and production relationship |
-| C-001 | P2 | Historical `auth.tempo.xyz` deployment anomaly | Live historical observation; current functional site restored | A hostile controller of a trusted auth origin could solicit deceptive wallet authorization | Confirm Vercel/DNS ownership and audit history |
+| C-012 | P2 investigation | Rust multi-fetch accepts one-unit vouchers for 10,000-unit responses | Full verifier PoC reproduced; affected example current/released; production consumers unknown | A dishonest payer can underpay 99.99% for every protected response in the shipped integration pattern | Inventory copied/production consumers; make request-cost debit inseparable from successful verification |
+| C-011 | P2 investigation | Concurrent Rust voucher reuse can authorize multiple paid responses | Real signed-voucher race reproduced through `Mpp::verify_session`; current/released code affected; production consumers unknown | A dishonest payer can receive multiple metered responses while durable voucher authorization advances once | Inventory production `verify_session` consumers; make voucher advancement and request-cost debit one atomic success condition |
+| C-001 | P2 | Historical `auth.tempo.xyz` deployment anomaly | Live historical observation; functional site restored in the August 23 check | A hostile controller of a trusted auth origin could solicit deceptive wallet authorization | Confirm Vercel/DNS ownership and audit history |
 | C-007 | P3 | `tempo-std` authorization RLP mismatch | Locally reproduced correctness issue | Expected rejection/DoS or integration failure, not an authorization bypass | Identify a production consumer and add cross-language vectors |
 | OBS-002 | P2 investigation | Grafana credential-shaped value in public Tempo branch | Public non-default branch head confirmed; validity/scope untested | Could expose or poison profiling telemetry and weaken detection; no direct fund authority established | Revoke/rotate owner-side, inspect scope and audit logs, remove from public refs |
 | OBS-001 | Known observation | Removed `changelogs/bot/.env` | Absent from default branch but present at 18 non-default branch heads; public PR says not live | A still-valid repository credential could enable source or automation abuse; no validity or scope established | Confirm revocation and audit the public-exposure interval internally |
@@ -114,12 +117,12 @@ Detailed local report: `findings/C-002-tempo-apps-cloudflare-preview.md`.
 - **Assessment state:** source and public-control candidate
 - **Deployment state:** legitimate release runs prove the publication/signing paths; malicious trigger was not tested
 - **Disclosure state:** ready after private-control check; not sent
-- **Affected asset:** `tempoxyz/tempo` at current head `d656ef5581505b59f1611b358e611f5a602d399e` (original baseline `86ff4deaebfee38bb0b000e648b2b367810265ff`)
-- **Evidence:** current workflow source and public ruleset inventory, latest successful detailed environment snapshot, successful `v1.13.1` release/container histories, and a local no-publication ancestry model
+- **Affected asset:** `tempoxyz/tempo` at the August 23 reviewed head `d656ef5581505b59f1611b358e611f5a602d399e` (original baseline `86ff4deaebfee38bb0b000e648b2b367810265ff`)
+- **Evidence:** August 23 workflow source and public ruleset inventory, latest successful detailed environment snapshot, successful `v1.13.1` release/container histories, and a local no-publication ancestry model
 
 ### Confirmed mechanism
 
-Important branches require review and checks, but the 2026-08-23 public inventory returned 64 branch-targeted ruleset records (62 active and two disabled) and zero tag-targeted rulesets. A `v*.*.*` tag triggers container and binary workflows using the tagged commit's source and workflow definition. The container path publishes SemVer and mutable stable images with signing; the release path signs binaries, creates a release, and uploads to R2. The latest successful detailed environment snapshot showed no independent reviewer gate capable of substituting for tag protection. Current head replaced one auxiliary stored App-credential path with short-lived GitHub STS, but did not bind release tags to reviewed `main` history or gate the artifact jobs on the version check.
+Important branches require review and checks, but the 2026-08-23 public inventory returned 64 branch-targeted ruleset records (62 active and two disabled) and zero tag-targeted rulesets. A `v*.*.*` tag triggers container and binary workflows using the tagged commit's source and workflow definition. The container path publishes SemVer and mutable stable images with signing; the release path signs binaries, creates a release, and uploads to R2. The latest successful detailed environment snapshot showed no independent reviewer gate capable of substituting for tag protection. The August 23 reviewed head replaced one auxiliary stored App-credential path with short-lived GitHub STS, but did not bind release tags to reviewed `main` history or gate the artifact jobs on the version check.
 
 ### How a criminal could use it
 
@@ -144,12 +147,12 @@ Detailed local report: `findings/C-006-unprotected-release-tags-bypass-main-revi
 - **Assessment state:** statically and dummy-locally validated candidate
 - **Deployment state:** legitimate `v0.7.0` signing/publication observed; no public successful privileged changelog run found
 - **Disclosure state:** ready after trigger/secret-placement check; not sent
-- **Affected assets:** current `wallet-cli` `5a06c07a76c175667507724da4c0b4ac185df048`, current `wallet-rs` `7801e796b8239514d7d8544cc1c32bfe4795d810`, and current Tempo launcher `d656ef5581505b59f1611b358e611f5a602d399e`; dummy PoC baseline `wallet-cli` `677e52278eaafa4ec356ed9c750446fba320cdfa`
-- **Evidence:** current workflow/STS/environment/source inspection, successful historical release jobs, live distribution manifests, launcher/update source, wallet key-storage source, and dummy-only local reproduction
+- **Affected assets:** August 23 reviewed `wallet-cli` `5a06c07a76c175667507724da4c0b4ac185df048`, `wallet-rs` `7801e796b8239514d7d8544cc1c32bfe4795d810`, and Tempo launcher `d656ef5581505b59f1611b358e611f5a602d399e`; dummy PoC baseline `wallet-cli` `677e52278eaafa4ec356ed9c750446fba320cdfa`
+- **Evidence:** August 23 workflow/STS/environment/source inspection, successful historical release jobs, live distribution manifests, launcher/update source, wallet key-storage source, and dummy-only local reproduction
 
 ### Confirmed mechanism
 
-A label-triggered same-repository pull request enters the shared release environment before review, requests a short-lived GitHub App token through GitHub OIDC and the external STS, checks out the unmerged PR, and installs its dependencies/lifecycle code before later token/Anthropic consumers. The current source says the replaced stored App wiring was never configured, so the old path is not treated as operational proof. The same named release boundary is used by the separate job that signs wallet extensions and writes current binaries/manifests to `cli.tempo.xyz`. The Tempo launcher trusts that host and key and automatically installs or updates extensions; the wallet extension can read the user's locally stored delegated private keys while running as that user.
+A label-triggered same-repository pull request enters the shared release environment before review, requests a short-lived GitHub App token through GitHub OIDC and the external STS, checks out the unmerged PR, and installs its dependencies/lifecycle code before later token/Anthropic consumers. The August 23 reviewed source says the replaced stored App wiring was never configured, so the old path is not treated as operational proof. The same named release boundary is used by the separate job that signs wallet extensions and writes binaries/manifests to `cli.tempo.xyz`. The Tempo launcher trusts that host and key and automatically installs or updates extensions; the wallet extension can read the user's locally stored delegated private keys while running as that user.
 
 ### How a criminal could use it
 
@@ -174,8 +177,8 @@ Detailed local report: `findings/C-008-wallet-cli-pr-release-secrets.md`.
 - **Assessment state:** protocol primitive locally reproduced; product intent unresolved
 - **Deployment state:** source/local only; current portal deployment and affected account state not established
 - **Disclosure state:** requires product-intent and deployment check; not sent
-- **Affected assets:** reproduced at Tempo `86ff4deaebfee38bb0b000e648b2b367810265ff` / Zones `acaa6a6734860ecd81d7f01de3c973b068dca2ac`; relevant trees remain byte-identical at current Tempo `d656ef5581505b59f1611b358e611f5a602d399e` / Zones `7e38642cdd5a1500784fd15cf30eda5366f3350a`
-- **Evidence:** exact source/spec history, first-party maximum-approval guidance, focused local native-contract reproduction, and current-head tree comparison
+- **Affected assets:** reproduced at Tempo `86ff4deaebfee38bb0b000e648b2b367810265ff` / Zones `acaa6a6734860ecd81d7f01de3c973b068dca2ac`; relevant trees remained byte-identical at the August 23 reviewed Tempo `d656ef5581505b59f1611b358e611f5a602d399e` / Zones `7e38642cdd5a1500784fd15cf30eda5366f3350a` heads
+- **Evidence:** exact source/spec history, first-party maximum-approval guidance, focused local native-contract reproduction, and August 23 head tree comparison
 
 ### Confirmed mechanism
 
@@ -197,21 +200,61 @@ Wallets should calculate and display effective contract allowance as delegated r
 
 Detailed local report: `findings/C-003-zone-portal-access-key-limit-composition.md`.
 
+## C-010 — MPP streaming headroom can become payment for undelivered value
+
+- **Family:** payment-channel fair exchange / agent-payment overcapture
+- **Priority and rating:** P1 investigation; High candidate under a malicious or compromised paid endpoint
+- **Assessment state:** locally validated cross-layer candidate; raw authorization weakness is public prior art
+- **Deployment state:** released TypeScript and current Rust SDK behavior; TIP-1034 reserve interface/constants observed on mainnet and Moderato by passive calls; deployed source identity and live paid integrations remain unconfirmed
+- **Disclosure state:** needs owner awareness/accepted-risk confirmation and coordinated review; not sent
+- **Affected assets:** mppx `3f73a17eeba9522d90894099635a43d6d2934cf5` and releases 0.8.15/0.8.19; mpp-rs `fadc88c044b9f8700b58d275bb659d403b231e07`; mpp-specs `6de3b4d5d13b4a80310bd80e021c02a4126428e2`; Tempo `18c174325061fa07ef577ef3fd59f5a7869bd556`; OpenClaw MPP plugin `4e30d5677145c5e5c4aebd1c7a3d372f072db419`
+- **Evidence:** two executed TypeScript PoCs, one executed Rust signature PoC, an existing Rust close-above-spent test, CI-equivalent Rust suite, immutable source/spec/prior-art review, and passive native-interface constants
+
+### Confirmed mechanism
+
+MPP's plaintext stream necessarily gives one party a small fair-exchange option: the payer signs a cumulative voucher before the corresponding delivery window, so the payee can withhold that window. While the channel remains settleable, the voucher is an on-chain claim the payer cannot revoke, bound to a channel and cumulative amount but not to price, units, request, resource, delivery, or expiry; channel finalization ends enforceability. Small client-controlled windows can bound this inherent risk.
+
+Current managed clients make the window server-controlled. A need-voucher event supplies `requiredCumulative`; mppx and mpp-rs can sign that amount after only deposit and optional absolute-cap checks, without deriving it from locally observed delivered value. `maxDeposit` is optional. The mppx local PoC received zero application messages but produced and independently verified a full-deposit voucher: 100 authorized for a one-unit quote. The Rust parity PoC raised a 1,000-unit prior authorization to a valid 10,000-unit full-deposit voucher.
+
+Under the current public TIP-1034 source, the payee can redeem the signed voucher directly: the reserve checks signature, monotonic amount, and deposit rather than off-chain consumption. The mppx exported and scheduled settlement path additionally automates the mismatch: a second local PoC supplied `highestVoucher=100` and `spent=1`, and the actual helper submitted 100 to its chain boundary. Passive reads observed the expected native interface/constants, but did not pin deployed bytecode to this source. The current specification requires exact-spend capture for cooperative close but does not state the same rule for ordinary settlement.
+
+### How a criminal could use it
+
+A criminal could compromise an MPP-enabled API, its operator/payee authority, or a third party that an unattended agent already calls. The endpoint could advertise a small per-unit price, induce a much larger cumulative authorization or top-up before useful output, withhold the stream, and redeem the signed amount. Payer-key compromise is not required; the agent signs through the intended automatic payment path.
+
+The eventual excess if the full authorization `A` is redeemed is `max(0, A - X)`, where `X` is value actually delivered and owed. Already realized excess is `max(0, S - X)`, where `S` is settled on-chain; the remaining collectible exposure is `max(0, A - max(S, X))`. A finite local cap and deposit bound one channel, but uncapped server-influenced top-ups can enlarge the practical ceiling toward available balance.
+
+### Preconditions and limits
+
+- Requires a malicious/compromised selected endpoint and its payee/operator settlement capability, plus an agent willing and funded to open or reuse an automatic session channel.
+- OpenClaw's normal setup creates a seven-day key with a total $10 USDC limit. That bounds its default key; larger custom policies and raw-private-key configuration can be materially broader.
+- The reviewed wallet CLI computes increments locally and was not classified as reachable through the same automatic-stream path merely because it depends on mppx.
+- mppx PR #510 already contains a public warning that server values plus an uncapped default can coerce vouchers up to deposit. The possible new regression/composition is ordinary/scheduled high-water settlement after PR #196 fixed the same invariant for cooperative close. Public silence does not prove Tempo is unaware.
+- No separate machine-token-only FX/free-option claim was retained, and no live payment, wallet, key, agent, endpoint, or state-changing transaction was used.
+
+### Detection and remediation
+
+Alert on large `requiredCumulative` jumps, top-ups disproportionate to delivered units, `highestVoucher > spent`, and settlement exceeding service-accounting records. Correlate agent tool calls, stream delivery, voucher signatures, merchant/operator identity, and reserve settlement.
+
+Make a finite local budget mandatory and require `newAuthorization <= locallyObservedDeliveredValue + configuredRiskWindow` before every signature. Treat server snapshots and cumulative/deposit hints as untrusted. Refuse ordinary or scheduled settlement above durable spend; obtain an exact-spend voucher or wait for consumption. Extend the specification's no-overcapture rule to every settlement path and add cross-SDK model tests over deposit, authorization, delivered value, spend, and settlement.
+
+Sanitized execution evidence: [`evidence/2026-08-24-C-010-mpp-streaming-overcapture-poc.txt`](evidence/2026-08-24-C-010-mpp-streaming-overcapture-poc.txt). Detailed local report and PoC patches: `findings/C-010-mpp-streaming-overcapture/`.
+
 ## C-009 — Wallet CLI masks the authority of its default unrestricted access key
 
 - **Family:** delegated wallet authorization / misleading security telemetry
 - **Priority and rating:** P1 investigation; Medium severity, potentially High financial consequence after local-key compromise
 - **Assessment state:** locally validated candidate; reference flow reachable
-- **Deployment state:** current release, protocol, hosted client schema, and read-only public UI assets observed; private server limit policy unknown
+- **Deployment state:** release/protocol/hosted-client schema and read-only public UI assets observed through August 23; private server limit policy unknown
 - **Disclosure state:** needs private policy/affected-key confirmation; not sent
-- **Affected assets:** current wallet-cli `5a06c07a76c175667507724da4c0b4ac185df048` (issue-relevant source unchanged from tested `677e52278eaafa4ec356ed9c750446fba320cdfa`), Accounts 0.16.0 `ce4d2c1e981d443deecd2193d65cdea610478ea6`, and current Tempo `d656ef5581505b59f1611b358e611f5a602d399e`
-- **Evidence:** pinned cross-repository semantics, upstream localnet vectors, current-head focused wallet-output regression, and passive inspection of current public approval assets
+- **Affected assets:** August 23 reviewed wallet-cli `5a06c07a76c175667507724da4c0b4ac185df048` (issue-relevant source unchanged from tested `677e52278eaafa4ec356ed9c750446fba320cdfa`), Accounts 0.16.0 `ce4d2c1e981d443deecd2193d65cdea610478ea6`, and Tempo `d656ef5581505b59f1611b358e611f5a602d399e`
+- **Evidence:** pinned cross-repository semantics, upstream localnet vectors, August 23 head focused wallet-output regression, and passive inspection of August 23 public approval assets
 
 ### Confirmed mechanism
 
-Wallet CLI v0.7.0 requests a 30-day access key with only an expiry. The current CLI-auth schema has no call-scope field, so the resulting key is unrestricted for contract calls. In the reference policy, omitted token limits also produce unlimited spending; a private hosted policy could still inject a finite limit. Tempo's protocol explicitly distinguishes omitted limits/scopes (unlimited/unrestricted) from explicit empty collections (deny all).
+Wallet CLI v0.7.0 requests a 30-day access key with only an expiry. The pinned CLI-auth schema has no call-scope field, so the resulting key is unrestricted for contract calls. In the reference policy, omitted token limits also produce unlimited spending; a private hosted policy could still inject a finite limit. Tempo's protocol explicitly distinguishes omitted limits/scopes (unlimited/unrestricted) from explicit empty collections (deny all).
 
-The CLI later destroys that distinction: absent limits normalize to `[]`, and `whoami`/`keys` report `unlimited: false`, `limit: "0.000000"`, no spending limits, and empty scopes. The same key remains payment-capable. A focused test reproduced the false output; the Accounts 0.16.0 localnet suite already demonstrates that an expiry-only extractable P-256 key can transfer before and after filesystem persistence. Current public wallet assets correctly render the omitted limit as `Spend — Unlimited`, so the approval screen itself is not hidden or deceptive.
+The CLI later destroys that distinction: absent limits normalize to `[]`, and `whoami`/`keys` report `unlimited: false`, `limit: "0.000000"`, no spending limits, and empty scopes. The same key remains payment-capable. A focused test reproduced the false output; the Accounts 0.16.0 localnet suite already demonstrates that an expiry-only extractable P-256 key can transfer before and after filesystem persistence. Public wallet assets observed on August 23 correctly rendered the omitted limit as `Spend — Unlimited`, so the approval screen itself was not hidden or deceptive.
 
 ### How a criminal could use it
 
@@ -253,6 +296,80 @@ If the token can alter a production Accounts/auth Worker or route, a compromised
 Requires an eligible same-repository identity. Confirm Cloudflare account/resource scope and token rotation before rating deployment impact. Review preview deployments and token use; isolate preview accounts and credentials, prohibit PR-resolved executables after secret injection, and require independent environment approval.
 
 Detailed local report: `findings/C-004-accounts-pr-cloudflare-token.md`.
+
+## C-012 — Rust multi-fetch accepts one-unit vouchers for 10,000-unit responses
+
+- **Family:** request-price accounting / merchant-side service theft
+- **Priority and rating:** P2 investigation; Medium, potentially High where protected calls have material cost or resale value
+- **Assessment state:** locally validated current/released integration candidate
+- **Deployment state:** affected pattern is shipped in the bundled multi-fetch example at current head and v0.11.0; copied or production consumers are unknown
+- **Disclosure state:** needs consumer inventory and coordinated review; not sent
+- **Affected assets:** mpp-rs current head `fadc88c044b9f8700b58d275bb659d403b231e07` and published v0.11.0 commit `e2e27edc17c1f8274bab982f3dc91477fcc01a44`
+- **Evidence:** deterministic signed-voucher PoC through the real `Mpp::verify_session` path, current/release source comparison, specification review, and adjacent public security history
+
+### Confirmed mechanism
+
+The bundled Rust multi-fetch server advertises 10,000 base units per page and authenticates that `amount` inside the MPP challenge, but configures `min_voucher_delta=0`. `Mpp::verify_session` validates the challenge, currency, recipient, channel, voucher monotonicity, deposit, and signature; the voucher branch does not compare its increment with `SessionRequest.amount` or atomically debit request cost from `spent`. The example then returns protected content for every non-management verification success.
+
+The full local PoC began with the prior 10,000-unit authorization fully consumed (`highest=spent=10,000`), created an HMAC-bound challenge with `amount=10,000`, and presented a valid voucher advancing cumulative authorization by exactly one. The real verifier succeeded even though only one unspent unit was available and durable `spent` remained unchanged. It reproduced the example's non-management-success predicate; static source establishes that the bundled handler releases content for that result. The same example is byte-identical at published v0.11.0, whose voucher path has the same omission.
+
+### How a criminal could use it
+
+A payer using its own funded channel and signer could submit successively higher vouchers in one-unit increments to an integration copied from the example. Each accepted increment can release one response advertised at 10,000 units. For advertised cost `P` and increment `d`, uncompensated service value per response is `P-d`; the shipped values permit 9,999 units, or 99.99%, underpayment without a race, forgery, stolen key, or server compromise.
+
+### Preconditions and limits
+
+- This steals service from a merchant; it does not take money from an agent.
+- Scope is the bundled fixed-price HTTP example and similar consumers that treat bare `verify_session` success as full payment while `min_voucher_delta < request cost`.
+- The Tempo session draft assigns cost calculation and atomic `spent += cost` to the application. This is therefore an unsafe official integration/API footgun rather than evidence that every conforming session server is affected.
+- Rust SSE/WebSocket paths use the atomic debit helper; current mppx HTTP accounting also charges. Those paths were not shown affected.
+- Production adoption, response value, rate limits, and additional application accounting are unknown.
+- Public GHSA `GHSA-fxc9-7j2w-vx54` fixed adjacent free-session/payment bypasses but did not add this request-cost debit. No specific public report was identified; private awareness remains unknown.
+- All execution used local keys/state and an in-process mocked chain response. No live channel, service, credential, payment, or RPC was used.
+
+### Detection and remediation
+
+Inventory production and copied uses of the Rust multi-fetch/`verify_session` pattern. Correlate response count and advertised cost with voucher growth and `spent`; alert when delivered value exceeds durably debited cost.
+
+Provide a high-level atomic request-payment primitive that persists a higher voucher if needed, derives server-owned route cost, requires sufficient unspent authorization, increments `spent` by that cost, and only then permits delivery. Keep `minVoucherDelta` as an independent anti-flood control. Fix the official example and add tests where a valid voucher increment is smaller than the authenticated challenge price.
+
+Sanitized execution evidence: [`evidence/2026-08-24-C-012-mpp-rust-unit-price-bypass-poc.txt`](evidence/2026-08-24-C-012-mpp-rust-unit-price-bypass-poc.txt). Detailed local report and PoC patch: `findings/C-012-mpp-rust-session-unit-price-bypass/`.
+
+## C-011 — Concurrent Rust voucher reuse can authorize multiple paid responses
+
+- **Family:** payment replay / concurrency / merchant-side service theft
+- **Priority and rating:** P2 investigation; Medium, potentially High for expensive or resalable protected responses
+- **Assessment state:** locally validated current/released implementation candidate
+- **Deployment state:** affected verification pattern is present in the bundled multi-fetch example; production consumers and pricing are unknown
+- **Disclosure state:** needs consumer inventory and coordinated review; not sent
+- **Affected assets:** mpp-rs current head `fadc88c044b9f8700b58d275bb659d403b231e07` and published v0.11.0 commit `e2e27edc17c1f8274bab982f3dc91477fcc01a44`
+- **Evidence:** deterministic signed-voucher race through the actual `Mpp::verify_session` boundary, real credential parsing and mocked on-chain channel decoding; focused core-state reproduction; current and release source review
+
+### Confirmed mechanism
+
+The Rust session verifier reads the current channel state, validates a voucher delta and signature against that snapshot, then performs a serialized atomic state update. Two concurrent requests can therefore validate the same increment against the same old snapshot. The first update advances durable `highest_voucher`; the second transition detects that the state already advanced but returns a successful no-op rather than rejecting the stale request. Both verifier calls consequently return success receipts.
+
+The stronger local PoC drove two concurrent, identically signed requests through the real `Mpp::verify_session` path, including HMAC/credential parsing and mocked `getChannel` ABI decoding. Both satisfied the same non-management-success predicate that gates content in the bundled example, while durable authorization advanced only from 1,000 to 2,000 once and no request cost was atomically debited. Static source shows the handler returns protected content for each such success. The ordinary sequential replay test still rejects the same voucher; the gap is specifically concurrent time-of-check/time-of-use behavior.
+
+### How a criminal could use it
+
+A payer with its own funded session and valid signing key could race the same incremental voucher across parallel requests. For a service that treats verifier success as sufficient to return protected content, every raced request can receive a response while the merchant obtains only one increment of enforceable authorization. For `N` successful responses of value `P` and one accepted voucher increment `delta`, uncompensated exposure is `max(0, N*P-delta)`; when `delta=P`, the race-only duplicate loss is `(N-1)*P`. Concurrency, downstream delivery, and application controls bound the result. No signature forgery or victim key is required.
+
+### Preconditions and limits
+
+- This steals paid service from a merchant; it does not take money from an agent and is distinct from C-010.
+- The demonstrated application shape is verification-only HTTP delivery, matching the bundled multi-fetch example. The bundled SSE and WebSocket examples perform a separate atomic spend debit and were not shown affected.
+- Production use of `verify_session`, response value, rate limits, deduplication, and application-side debit behavior are not public.
+- Earlier public replay/store fixes serialized state and reject sequential reuse. This race survives serialization because the losing transition is deliberately reported as success; private awareness remains unknown.
+- All tests used local keys, in-memory state, and mocked transport. No live channel, service, credential, payment, or RPC was used.
+
+### Detection and remediation
+
+Correlate simultaneous requests by channel, voucher hash/cumulative amount, and response identifier; alert when more than one successful response maps to one authorization increment. Inventory every `verify_session` consumer and determine whether it performs a linearizable request-cost debit before releasing value.
+
+Make a stale or losing atomic voucher transition fail authentication. Prefer one atomic server operation that both advances the voucher and reserves/debits the specific request cost, keyed by a stable request identifier. Add a barrier-synchronized regression test that requires exactly one of two same-voucher requests to cross the delivery gate, and retain application-level idempotency and concurrency limits as defense in depth.
+
+Sanitized execution evidence: [`evidence/2026-08-24-C-011-mpp-rust-voucher-race-poc.txt`](evidence/2026-08-24-C-011-mpp-rust-voucher-race-poc.txt). Detailed local report and PoC patches: `findings/C-011-mpp-rust-session-voucher-race/`.
 
 ## C-001 — Historical `auth.tempo.xyz` Vercel deployment anomaly
 
@@ -369,4 +486,4 @@ For every material research pass:
 
 ## Current disclosure order
 
-The first owner-side hygiene check is OBS-002 because revocation is low-cost and does not require testing the public value. Subject to final owner/scope checks, the recommended vulnerability-discussion order is C-005, C-002, a coordinated C-006/C-008 release review, C-003, C-009, then C-004. C-009's first question is a low-risk owner-side check of the hosted limit policy and affected-key population; no live authorization is needed. C-001 is an urgent ownership/audit-history question rather than a current takeover claim. C-007 is a lower-priority correctness report.
+The first owner-side hygiene check is OBS-002 because revocation is low-cost and does not require testing the public value. Subject to final owner/scope checks, the recommended vulnerability-discussion order is C-005, C-002, C-010, a coordinated C-006/C-008 release review, C-003, C-009, C-004, C-012, then C-011. C-010's first question is whether server-selected authorization headroom and high-water ordinary settlement are known/accepted; the existing local evidence is sufficient without a live payment. C-012/C-011 first require a private inventory of production or copied `verify_session` consumers and whether response release shares one atomic request-cost debit with voucher advancement. C-009's first question is a low-risk owner-side check of the hosted limit policy and affected-key population; no live authorization is needed. C-001 is an urgent ownership/audit-history question rather than a current takeover claim. C-007 is a lower-priority correctness report.

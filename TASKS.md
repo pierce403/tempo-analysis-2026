@@ -47,6 +47,17 @@ None.
 
 ## Complete
 
+### T-012 — Audit MPP streaming and agent-payment economics
+
+- **State**: complete
+- **Outcome**: Audited the current public Machine Payments Protocol stack for theft-relevant implementation defects and protocol asymmetries, with a focused streaming-payment/free-option model. Retained C-010 after local TypeScript/Rust reproduction and passive reserve-interface checks, while separating public prior art and inherent fair-exchange risk from the possibly unreviewed ordinary-settlement composition. Separately retained C-012 after a full-verifier PoC accepted a one-unit increment for the released example's 10,000-unit response, and C-011 after a deterministic verifier race produced two non-management/content-gate predicate successes for one durable voucher increment; static source supplies the handler-delivery composition. Production consumer reach remains an owner-side gate.
+- **Evidence required**:
+  - [x] Current specifications, implementations, integrations, releases, and exact revisions are inventoried with deployed relevance separated from examples.
+  - [x] Payment, streaming, settlement, cancellation, retry, and delivery state machines are mapped with explicit payer/payee invariants and loss bounds.
+  - [x] Upstream suites and focused adversarial properties ran locally; confirmed candidates have deterministic dummy/local reproduction and falsified hypotheses are retained as negative results.
+  - [x] Each retained candidate distinguishes an implementation bug from an inherent fairness tradeoff and records prerequisites, realistic theft impact, limiting controls, prior art, and owner-confirmation gates.
+  - [x] No live payment, credential use, deceptive agent interaction, production mutation, load test, or unrelated third-party testing was performed.
+
 ### T-011 — Produce the consolidated pentest report and evidence pack
 
 - **State**: complete
