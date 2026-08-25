@@ -19,6 +19,9 @@ These instructions apply to the entire repository. This is a defensive, public-i
 - Treat hypotheses as hypotheses. A candidate becomes a finding only after reproducible validation and realistic impact analysis.
 - Prefer primary sources and preserve source URLs. Note contradictions and stale evidence rather than silently resolving them.
 - Keep candidate vulnerabilities and disclosure-sensitive details out of public task logs and synced memory.
+- Every factual or analytical claim unit in `REPORT.md`—each metadata line, prose paragraph, list item, and table data row—must directly contain an inline Markdown link to a repository file under `evidence/`. A section-level link or evidence-index entry does not satisfy this requirement. Headings, blank lines, table headers/separators, and fenced-code-only lines are exempt.
+- Every linked narrative `.txt` evidence artifact must identify when or from which pinned source the evidence was obtained, give an exact re-run command or bounded verification procedure, preserve the captured result, and state the relevant safety boundary or limitation. Any script, patch, fixture, or source file needed by that procedure must also be tracked in the repository.
+- Before committing or publishing a report change, run `python3 scripts/verify_report_evidence.py --require-tracked` and resolve every diagnostic. Do not treat ignored or workstation-only material as reproducible evidence.
 
 ## Task tracking
 

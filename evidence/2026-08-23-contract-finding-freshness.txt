@@ -4,6 +4,41 @@ Evidence type: local Git object, ancestry, diff, source, and use-site inspection
 Safety: public repository mirrors only; no RPC, deployed contract, wallet, credential, or
 production state was queried or changed. This check did not submit a transaction or rerun a PoC.
 
+Re-run command/procedure
+------------------------
+Clone the three public repositories, fetch the named commits, and reproduce the ancestry/object
+comparisons with ordinary local Git commands:
+
+  git clone https://github.com/tempoxyz/tempo.git tempo-public
+  git -C tempo-public merge-base --is-ancestor \
+    86ff4deaebfee38bb0b000e648b2b367810265ff \
+    d656ef5581505b59f1611b358e611f5a602d399e
+  git -C tempo-public rev-parse \
+    86ff4deaebfee38bb0b000e648b2b367810265ff:crates/precompiles/src
+  git -C tempo-public rev-parse \
+    d656ef5581505b59f1611b358e611f5a602d399e:crates/precompiles/src
+  git -C tempo-public diff --quiet \
+    86ff4deaebfee38bb0b000e648b2b367810265ff \
+    d656ef5581505b59f1611b358e611f5a602d399e -- \
+    crates/revm/src crates/precompiles/src crates/primitives/src/transaction crates/contracts/src
+
+  git clone https://github.com/tempoxyz/zones.git zones-public
+  git -C zones-public merge-base --is-ancestor \
+    acaa6a6734860ecd81d7f01de3c973b068dca2ac \
+    7e38642cdd5a1500784fd15cf30eda5366f3350a
+  git -C zones-public rev-parse \
+    7e38642cdd5a1500784fd15cf30eda5366f3350a:crates/contracts/src/runtime/tempo/ZonePortal.sol
+
+  git clone https://github.com/tempoxyz/tempo-std.git tempo-std-public
+  git -C tempo-std-public checkout c77f1671f7fd01c698f1344c2a5f38f11a7f8384
+  git -C tempo-std-public rev-parse HEAD
+  git -C tempo-std-public rev-parse \
+    c77f1671f7fd01c698f1344c2a5f38f11a7f8384:src/tx/TempoTransactionLib.sol
+
+Exit 0 from `merge-base --is-ancestor` confirms ancestry; matching `rev-parse REV:path` IDs prove
+byte-identical Git objects. A nonzero `diff --quiet` result means the named subtree changed and the
+record must be refreshed rather than reused.
+
 Default-branch revisions inspected
 ----------------------------------
 tempoxyz/zones main:

@@ -1,0 +1,134 @@
+Tempo analysis evidence: REPORT.md claim-to-evidence audit
+Executed: 2026-08-25T13:10Z
+Evidence type: local report parser, link resolver, Git index check, evidence-contract check, and
+reviewer reconciliation against dated source/test artifacts
+Safety: local repository reads and harmless fixture execution only; no live credential,
+production authorization, workflow trigger, payment, transaction, or production mutation
+
+Purpose and provenance
+----------------------
+This artifact supports report metadata, assessment-process statements, evidence taxonomy, scope
+attestations, counts, and final quality-control claims. REPORT.md version 1.2 covers work performed
+from 2026-08-21 through 2026-08-25 against the public targets and pinned revisions named in each
+finding artifact. The handling statement is an operator attestation: this workspace did not make
+an external disclosure during the recorded assessment, but an outside reviewer cannot prove a
+negative about every communication channel from repository contents alone.
+
+Claim unit and evidence contract
+--------------------------------
+A report claim unit is one metadata line, prose paragraph, list item, or table data row. Headings,
+blank lines, table headers/separators, and fenced-code-only lines are exempt. Every claim unit must
+contain its own inline Markdown link below evidence/. Every linked narrative .txt must contain an
+observation/execution date or pin, a safe re-run command/procedure, a captured result, and explicit
+limitations/safety. Scripts, tests, and patches referenced for reproduction must be Git-tracked.
+
+Re-run command/procedure
+------------------------
+From the repository root, after staging the intended final tree so tracked-file validation sees
+new evidence assets:
+
+  python3 scripts/verify_report_evidence.py --require-tracked
+  git diff --check
+  git diff --cached --check
+  git status --short
+
+Reconcile the report's finding, priority, PoC, control-model, historical, and observation counts:
+
+  printf 'findings='; rg -c '^### C-[0-9]{3} ' REPORT.md
+  printf 'p0='; rg -c '^\*\*Priority / severity:\*\* P0(?: investigation)? /' REPORT.md
+  printf 'p1='; rg -c '^\*\*Priority / severity:\*\* P1(?: investigation)? /' REPORT.md
+  printf 'p2='; rg -c '^\*\*Priority / severity:\*\* P2(?: investigation)? /' REPORT.md
+  printf 'p3='; rg -c '^\*\*Priority / severity:\*\* P3(?: investigation)? /' REPORT.md
+  printf 'executed_pocs='; rg '^\*\*Evidence type:\*\*' REPORT.md | rg -c 'executed'
+  printf 'release_control_models='; rg -c '^\*\*Evidence type:\*\*.*local no-publication control model' REPORT.md
+  printf 'historical_no_poc='; rg -c '^\*\*Evidence type:\*\*.*no exploit PoC' REPORT.md
+  printf 'owner_check_observations='; rg -c '^OBS-[0-9]{3}$' evidence/2026-08-23-public-repository-secret-scan.txt
+
+Validate the reproduction scripts without network or target execution:
+
+  bash -n scripts/scan_public_repo_history.sh
+  bash -n evidence/repro/C-002-C-004-wrangler-path/repro.sh
+  bash -n evidence/repro/C-003-zone-allowance/repro.sh
+  bash -n evidence/repro/C-005-tipbot-key-boundary/repro.sh
+  bash -n evidence/repro/C-006-release-tag-control/repro.sh
+  bash -n evidence/repro/C-007-tempo-std-rlp/repro.sh
+  bash -n evidence/repro/C-008-wallet-release-boundary/repro.sh
+  bash -n evidence/repro/C-009-wallet-authority-output/repro.sh
+
+Run the final-tree credential-hygiene gate without authenticating any candidate:
+
+  target/secret-scan/tool/trufflehog --json --no-verification --no-update \
+    --results=unverified --fail-on-scan-errors --force-skip-binaries \
+    --force-skip-archives filesystem AGENTS.md REPORT.md TASKS.md evidence scripts \
+    memory/logs/2026-08-25.md
+
+Threat-model source procedure
+-----------------------------
+The crown-jewel table is an attack-surface model rather than proof of compromise. Its protocol and
+validator asset classes can be independently grounded in the pinned public Tempo source:
+
+  git clone https://github.com/tempoxyz/tempo.git tempo-threat-model
+  git -C tempo-threat-model checkout 86ff4deaebfee38bb0b000e648b2b367810265ff
+  git -C tempo-threat-model grep -n -E \
+    'ISSUER_ROLE|BURN_BLOCKED_ROLE|PAUSE_ROLE|UNPAUSE_ROLE' -- \
+    crates/precompiles/src/tip20
+  git -C tempo-threat-model grep -n -E \
+    'ed25519|SigningShare|bls12381|full_dkg' -- \
+    crates/validator-config crates/consensus-config crates/e2e/src/tests/dkg
+  git -C tempo-threat-model grep -n -E \
+    'DEX|fee conversion|TIP403|Policy' -- README.md crates tips
+
+Captured source result: the pinned tree defines privileged TIP-20 roles, TIP-403 policy plumbing,
+native DEX/fee-conversion code, Ed25519 validator identity operations, BLS12-381 signing shares,
+and DKG lifecycle/recovery tests. The report's theft/control consequences and entrypoints are
+threat-model inferences from those assets, not evidence that their keys, roles, or balances were
+exposed.
+
+Captured result
+---------------
+Final report SHA-256:
+
+  226d1fa3cdbade27ef46d0d52fd3841c597337ee36f5b46ad54b5ec21ee28b8a  REPORT.md
+
+Tracked validator result:
+
+  PASS: 309 claim units checked (metadata=54, prose paragraph=87, list item=95, table row=73); 309/309 contain direct evidence links; 19 unique evidence targets; 19/19 linked .txt artifacts satisfy the evidence contract; tracked check=on
+
+Deterministic count reconciliation:
+
+  findings=12
+  p0=2
+  p1=5
+  p2=4
+  p3=1
+  executed_pocs=10
+  release_control_models=1
+  historical_no_poc=1
+  owner_check_observations=2
+
+Portable-fixture reconciliation completed on August 25. All shell fixtures parse, the C-003,
+C-009, C-010, C-011, and C-012 patches apply at their recorded pins, and C-011/C-012 also apply
+at the recorded v0.11.0 commit. C-003's normalized fixture passed its focused Rust test at
+2026-08-25T13:09:53Z; C-009's normalized fixture produced its expected upstream failure and then
+passed 40/40 identity tests plus TypeScript compilation at 2026-08-25T13:00:42Z. The separate
+finding artifacts preserve all focused/full-suite outputs and limitations.
+
+Final non-verifying TruffleHog 3.97.0 filesystem scan during 2026-08-25T13:11Z: exit 0 with four
+unverified matches. Manual
+path/type review classified three as 40-character immutable Git action commit SHAs and one as the
+intentional dummy-token HTTPS URI intercepted by the fail-closed C-008 fixture. Verification was
+disabled by design; no candidate value was authenticated, no unclassified candidate remained, and
+no real secret was found in the final report/evidence/script/log tree.
+
+Final syntax/whitespace gates: `bash -n` passed for the history scanner and all eight shell fixture
+runners; Python source compilation passed for the validator; `git diff --check` and
+`git diff --cached --check` both returned exit 0.
+
+Review limitations
+------------------
+The validator proves structural traceability, file existence/tracking, and the presence of the four
+required evidence fields; it cannot prove that a command was honestly executed or that analysis is
+correct. Those properties require review of captured output, pinned source, limitations, and safe
+independent reproduction. Recommendations, severity, threat scenarios, and prioritization remain
+analytical judgments. Public snapshots can drift after their recorded timestamps, and private
+controls remain owner-confirmation items.

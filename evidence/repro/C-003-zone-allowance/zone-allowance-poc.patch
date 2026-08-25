@@ -1,0 +1,119 @@
+diff --git a/crates/precompiles/src/tip20/mod.rs b/crates/precompiles/src/tip20/mod.rs
+index 4548b68e36..bdf7e30cf8 100644
+--- a/crates/precompiles/src/tip20/mod.rs
++++ b/crates/precompiles/src/tip20/mod.rs
+@@ -1583,7 +1583,8 @@ pub(crate) mod tests {
+     use crate::{
+         PATH_USD_ADDRESS,
+         account_keychain::{
+-            AccountKeychain, KeyRestrictions, SignatureType, TokenLimit, getRemainingLimitCall,
++            AccountKeychain, CallScope, KeyRestrictions, SelectorRule, SignatureType, TokenLimit,
++            getRemainingLimitCall,
+         },
+         address_registry::{AddressRegistry, MasterId, UserTag},
+         error::TempoPrecompileError,
+@@ -1592,7 +1593,7 @@ pub(crate) mod tests {
+         test_util::{TIP20Setup, VIRTUAL_MASTER, register_virtual_master, setup_storage},
+         tip403_registry::{ALLOW_ALL_POLICY_ID, REJECT_ALL_POLICY_ID},
+     };
+-    use alloy::primitives::{Address, FixedBytes, IntoLogData, U256, hex};
++    use alloy::primitives::{Address, FixedBytes, IntoLogData, TxKind, U256, hex};
+     use rand_08::{Rng, distributions::Alphanumeric, thread_rng};
+     use tempo_chainspec::hardfork::TempoHardfork;
+     use tempo_contracts::precompiles::{
+@@ -2631,6 +2632,95 @@ pub(crate) mod tests {
+         })
+     }
+
++    #[test]
++    fn test_zone_portal_deposit_scope_does_not_bound_preexisting_allowance() -> eyre::Result<()> {
++        const DEPOSIT_SELECTOR: [u8; 4] = [0x03, 0xdd, 0x6f, 0x34];
++
++        let mut storage = HashMapStorageProvider::new_with_spec(1, TempoHardfork::T8);
++        let admin = Address::random();
++        let owner = Address::random();
++        let access_key = Address::random();
++        let portal = Address::random();
++        let amount = U256::from(1000);
++        let delegated_limit = U256::ONE;
++
++        StorageCtx::enter(&mut storage, || {
++            let mut token = TIP20Setup::create("Test", "TST", admin)
++                .with_issuer(admin)
++                .with_mint(owner, amount)
++                .apply()?;
++            let token_address = token.address;
++
++            let mut keychain = AccountKeychain::new();
++            keychain.initialize()?;
++            keychain.set_transaction_key(Address::ZERO)?;
++            keychain.set_tx_origin(owner)?;
++
++            token.approve(
++                owner,
++                ITIP20::approveCall {
++                    spender: portal,
++                    amount,
++                },
++            )?;
++
++            keychain.authorize_key(
++                owner,
++                access_key,
++                SignatureType::Secp256k1,
++                KeyRestrictions {
++                    expiry: u64::MAX,
++                    enforceLimits: true,
++                    limits: vec![TokenLimit {
++                        token: token_address,
++                        amount: delegated_limit,
++                        period: 0,
++                    }],
++                    allowAnyCalls: false,
++                    allowedCalls: vec![CallScope {
++                        target: portal,
++                        selectorRules: vec![SelectorRule {
++                            selector: FixedBytes::from(DEPOSIT_SELECTOR),
++                            recipients: vec![],
++                        }],
++                    }],
++                },
++                None,
++            )?;
++
++            keychain.validate_call_scope_for_transaction(
++                owner,
++                access_key,
++                &TxKind::Call(portal),
++                &DEPOSIT_SELECTOR,
++            )?;
++            keychain.set_transaction_key(access_key)?;
++            keychain.set_tx_origin(owner)?;
++
++            token.transfer_from(
++                portal,
++                ITIP20::transferFromCall {
++                    from: owner,
++                    to: portal,
++                    amount,
++                },
++            )?;
++
++            assert_eq!(token.get_balance(owner)?, U256::ZERO);
++            assert_eq!(token.get_balance(portal)?, amount);
++            assert_eq!(
++                keychain.get_remaining_limit(getRemainingLimitCall {
++                    account: owner,
++                    keyId: access_key,
++                    token: token_address,
++                })?,
++                delegated_limit,
++            );
++
++            Ok(())
++        })
++    }
++
+     #[test]
+     fn test_system_transfer_from() -> eyre::Result<()> {
+         let mut storage = HashMapStorageProvider::new(1);

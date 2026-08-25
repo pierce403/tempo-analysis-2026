@@ -59,11 +59,39 @@ Steps:
 3. Tag that unreviewed commit v9.9.9.
 4. Switch back to main and test ancestry plus the current v*.*.* trigger pattern.
 
-Observed result:
+Re-run command/procedure:
+
+  bash evidence/repro/C-006-release-tag-control/repro.sh
+
+The committed script creates and removes its own disposable Git repository. Its SHA-256 at the
+2026-08-25 portability refresh was:
+
+  97a02734ea01436e17d12eada631ca62430f22dfb15bdfef78b279b9767e6b6b  repro.sh
+
+To verify the pinned public workflow and current public controls independently:
+
+  git clone https://github.com/tempoxyz/tempo.git
+  git -C tempo checkout d656ef5581505b59f1611b358e611f5a602d399e
+  git -C tempo show HEAD:.github/workflows/docker.yml
+  git -C tempo show HEAD:.github/workflows/release.yml
+  gh api --paginate repos/tempoxyz/tempo/rulesets
+  gh api -i repos/tempoxyz/tempo/actions/runs/32366866464
+  gh api -i repos/tempoxyz/tempo/actions/runs/32366866491
+
+Captured result from the original run:
 
   executed=2026-08-23T14:37:48Z
   main_sha=98e7bb74d1b40220c659c9fb942238a1d67d01df
   tag_sha=3f9984a8004bd945500e3cce9ebd876c571b508d
+  trigger_match=yes
+  merge_base_is_ancestor_rc=1
+  tag_payload=synthetic-unreviewed-artifact
+
+Captured result from the committed fixture refresh:
+
+  executed_utc=2026-08-25T12:38:35Z
+  main_sha=27de5bdb500fc3d2ad8993275758f8d1eb4e9d5c
+  tag_sha=7ec8362d529c07e5895db1c2319f0935086ed35f
   trigger_match=yes
   merge_base_is_ancestor_rc=1
   tag_payload=synthetic-unreviewed-artifact

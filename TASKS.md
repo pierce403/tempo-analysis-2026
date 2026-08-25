@@ -47,6 +47,17 @@ None.
 
 ## Complete
 
+### T-013 — Enforce report claim-to-evidence traceability
+
+- **State**: complete
+- **Outcome**: Every factual or analytical claim unit in `REPORT.md` now links directly to committed evidence with dated provenance, safe rerun instructions, captured results, and limitations. Portable sanitized fixtures replace ignored workstation-only PoCs, and a mandatory tracked-file validator enforces the contract before publication.
+- **Evidence required**:
+  - [x] Every report metadata line, prose claim block, list item, and data-table row has a direct `evidence/` link; headings and table separators are excluded.
+  - [x] Linked evidence is committed and contains timestamp/provenance, rerun instructions, captured output or expected deterministic result, and explicit limits.
+  - [x] Sanitized local-only PoC fixtures referenced by evidence are committed rather than hidden only under ignored `target/` or `findings/` paths.
+  - [x] An automated verifier fails on missing claim links, missing files, non-evidence targets, or incomplete evidence metadata.
+  - [x] Markdown links, evidence coverage, deterministic repros, secret scanning, and both working-tree/staged `git diff --check` gates pass before direct publication to `origin/main`.
+
 ### T-012 — Audit MPP streaming and agent-payment economics
 
 - **State**: complete

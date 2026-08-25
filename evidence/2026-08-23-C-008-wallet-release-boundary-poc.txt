@@ -2,6 +2,8 @@ Tempo analysis evidence: C-008 wallet PR-to-release process-boundary PoC
 Executed: 2026-08-23T14:20Z
 Evidence type: local dummy reproduction using pinned pnpm 11.0.8
 Safety: no GitHub, Anthropic, R2, Tempo, or release write; no real credential
+Source baseline: wallet-cli 677e52278eaafa4ec356ed9c750446fba320cdfa; August 23
+freshness revision 5a06c07a76c175667507724da4c0b4ac185df048
 
 Purpose
 -------
@@ -9,15 +11,36 @@ Demonstrate the current base-workflow route in which PR-controlled package lifec
 a fake executable directory to the modeled GITHUB_PATH, and a later git invocation resolves the
 fake executable after the dummy App token is introduced.
 
-Command
--------
-bash target/supply-chain/repro-wallet-cli-pr-release-secrets/repro.sh
+Re-run command/procedure
+------------------------
+From the root of this repository:
 
-Observed output
+  bash evidence/repro/C-008-wallet-release-boundary/repro.sh
+
+This local dummy model uses the pinned package manager and may need ordinary npm-registry network
+access the first time. It does not contact GitHub, Tempo, Anthropic, or R2. To verify the current
+public source chain independently:
+
+  git clone https://github.com/tempoxyz/wallet-cli.git
+  git -C wallet-cli checkout 5a06c07a76c175667507724da4c0b4ac185df048
+  git -C wallet-cli show HEAD:.github/workflows/changelog-generate.yml
+  git -C wallet-cli show HEAD:.github/sts/release.sts.yaml
+  git -C wallet-cli show HEAD:.github/workflows/build.yml
+
+  git clone https://github.com/tempoxyz/tempo.git tempo-launcher
+  git -C tempo-launcher checkout d656ef5581505b59f1611b358e611f5a602d399e
+  git -C tempo-launcher show HEAD:crates/ext/src/launcher.rs
+
+Captured result
 ---------------
+The final committed-fixture refresh included fail-closed path and executable assertions, returned
+exit 0, and produced:
+
+executed_utc=2026-08-25T12:56:15Z
 Already up to date
 $ bash ./attacker-preinstall.sh
-Done using pnpm v11.0.8
+
+Done in 549ms using pnpm v11.0.8
 
 Dummy-only capture:
 argv=push [credential-bearing GitHub HTTPS URL sanitized] HEAD:dummy-branch
@@ -29,15 +52,14 @@ e2f39f57789adb3b3cc155b57db5435c364fdafd3238452842dfc20d8baed42d  package.json
 17c814b167307942d3609c7b9d916ceddb85839573ab39baa114e30edb132a1a  pnpm-lock.yaml
 ac1616b2b6e1a5d8beed3dbae95e1774faf243bf8c53866d780bc06a636b0d5a  attacker-preinstall.sh
 3207fbadec46254fb22a021e05babdfb74792dc1b7102cc698aa531b5c2cea1f  fake-bin/git
-afb3a2540d2cc8e04671f2583a2083ed0b1e5e32c7a1b9a8f7fc757d1c7c7232  repro.sh
-b179b02af86615bdfa16860ca35b91a7ab6cd7dcaad598c3257fb1ac6a64c57d  capture.txt
+63414df0e9c58b2fa8fffd7da58cd48d64886da85e0f2a114c2ad138bcd2fac3  repro.sh
 
 Impact demonstrated
 -------------------
 Code executed during dependency installation can influence executable resolution in later steps
 and receive a subsequently introduced token while preserving the expected command shape. Public
-workflow evidence separately ties the same release environment to signing and current-artifact
-publication.
+source shows PR automation and publication jobs naming the same release environment; whether a PR
+run can reach signing or publication authority is private and was not established.
 
 Not demonstrated
 ----------------

@@ -3,6 +3,48 @@ Source execution date: 2026-08-21; focused finding probes refreshed 2026-08-23
 Evidence type: complete checked-in local suites plus focused local regressions
 Safety: pinned public source and local execution only; no public RPC writes or deployments
 
+Re-run command/procedure
+------------------------
+The following bounded sequence reconstructs the pinned source and exact tests. It requires Git,
+Rust 1.97.0, Solidity 0.8.35, Z3 4.13.3, and ordinary package-source network access. The custom
+Forge build is expensive; the repository's pinned patch script supplies Tempo hardfork support.
+Run in a new disposable directory:
+
+  git clone https://github.com/tempoxyz/zones.git zones
+  git -C zones checkout acaa6a6734860ecd81d7f01de3c973b068dca2ac
+  git -C zones submodule update --init --recursive
+  git clone https://github.com/tempoxyz/tempo.git tempo-foundry-patch
+  git -C tempo-foundry-patch checkout 18a5d71d6ab621433145e5ea86dfe3dbace0763a
+  git clone https://github.com/foundry-rs/foundry.git foundry
+  git -C foundry checkout 6902a96211da7bcc3d9c4d8e97910ac5c9d5d2c6
+  tempo-foundry-patch/scripts/foundry-patch.sh "$PWD/tempo-foundry-patch" "$PWD/foundry"
+  cargo build --manifest-path foundry/Cargo.toml --bin forge --profile release --no-default-features
+  cd zones/crates/contracts
+  ../../../foundry/target/release/forge test -vvv --match-path 'test/**'
+  ../../../foundry/target/release/forge test --symbolic --match-test 'check_' --symbolic-solver z3 --symbolic-timeout 180 -vvv
+  ../../../foundry/target/release/forge coverage --ir-minimum --match-path 'test/**' --exclude-tests --report summary
+  ../../../foundry/target/release/forge build --sizes
+  cd ../../..
+  cargo run --manifest-path zones/Cargo.toml -p tempo-xtask -- check-abi
+  cargo test --manifest-path zones/Cargo.toml -p zone-precompiles --test storage --features test-utils
+
+Run the native and helper suites in separate pinned clones:
+
+  git clone https://github.com/tempoxyz/tempo.git tempo-native
+  git -C tempo-native checkout 88b5d7720d29655fdf9025bb14ddcd6bba1f645c
+  cargo test --manifest-path tempo-native/Cargo.toml -p tempo-precompiles --features test-utils
+  cargo test --manifest-path tempo-native/Cargo.toml -p tempo-precompiles --features test-utils -- --ignored --list
+  cargo test --manifest-path tempo-native/Cargo.toml -p tempo-revm
+  git clone https://github.com/tempoxyz/tempo-std.git tempo-std
+  git -C tempo-std checkout c77f1671f7fd01c698f1344c2a5f38f11a7f8384
+  cd tempo-std
+  forge test -vvv
+  forge coverage --report summary
+
+The C-007 focused probe is independently portable at
+`evidence/repro/C-007-tempo-std-rlp/repro.sh`; C-003 is independently portable at
+`evidence/repro/C-003-zone-allowance/repro.sh`.
+
 Zones Solidity runtime
 ----------------------
 Repository/revision: tempoxyz/zones acaa6a6734860ecd81d7f01de3c973b068dca2ac

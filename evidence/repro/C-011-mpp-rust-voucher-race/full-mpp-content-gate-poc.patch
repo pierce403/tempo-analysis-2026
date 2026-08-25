@@ -1,0 +1,173 @@
+diff --git a/src/protocol/methods/tempo/session_method.rs b/src/protocol/methods/tempo/session_method.rs
+--- a/src/protocol/methods/tempo/session_method.rs
++++ b/src/protocol/methods/tempo/session_method.rs
+@@ -2287,6 +2287,169 @@ mod tests {
+         assert_eq!(result.unwrap_err().code, Some(ErrorCode::DeltaTooSmall));
+     }
+
++    /// Full local witness through `Mpp::verify_session`: two HTTP-style
++    /// credential verifications cross the multi-fetch example's content gate
++    /// while one signed cumulative increment is persisted only once.
++    #[tokio::test]
++    async fn poc_full_mpp_verify_session_crosses_content_gate_twice() {
++        use crate::protocol::methods::tempo::session::SessionCredentialPayload;
++        use crate::protocol::methods::tempo::voucher::sign_voucher;
++        use alloy::{
++            primitives::Bytes,
++            providers::{mock::Asserter, ProviderBuilder},
++            signers::local::PrivateKeySigner,
++            sol_types::SolValue,
++        };
++        use std::sync::atomic::{AtomicUsize, Ordering};
++
++        struct RefreshBarrierStore {
++            inner: Arc<InMemoryChannelStore>,
++            refreshes: AtomicUsize,
++            barrier: tokio::sync::Barrier,
++        }
++
++        impl ChannelStore for RefreshBarrierStore {
++            fn get_channel(
++                &self,
++                channel_id: &str,
++            ) -> std::pin::Pin<
++                Box<
++                    dyn Future<Output = Result<Option<ChannelState>, VerificationError>>
++                        + Send
++                        + '_,
++                >,
++            > {
++                self.inner.get_channel(channel_id)
++            }
++
++            fn update_channel(
++                &self,
++                channel_id: &str,
++                updater: Box<
++                    dyn FnOnce(
++                            Option<ChannelState>,
++                        )
++                            -> Result<Option<ChannelState>, VerificationError>
++                        + Send,
++                >,
++            ) -> std::pin::Pin<
++                Box<
++                    dyn Future<Output = Result<Option<ChannelState>, VerificationError>>
++                        + Send
++                        + '_,
++                >,
++            > {
++                let is_initial_refresh = self.refreshes.fetch_add(1, Ordering::SeqCst) < 2;
++                let channel_id = channel_id.to_string();
++                Box::pin(async move {
++                    let result = self.inner.update_channel(&channel_id, updater).await;
++                    if is_initial_refresh {
++                        self.barrier.wait().await;
++                    }
++                    result
++                })
++            }
++        }
++
++        let signer = PrivateKeySigner::random();
++        let channel_id = format!("0x{}", "ef".repeat(32));
++        let channel_id_b256 = channel_id.parse::<B256>().unwrap();
++        let escrow: Address = "0x5555555555555555555555555555555555555555"
++            .parse()
++            .unwrap();
++        let payee: Address = "0x2222222222222222222222222222222222222222"
++            .parse()
++            .unwrap();
++        let token: Address = "0x3333333333333333333333333333333333333333"
++            .parse()
++            .unwrap();
++
++        let inner = Arc::new(InMemoryChannelStore::new());
++        let mut state = test_channel_state(&channel_id);
++        state.authorized_signer = signer.address();
++        state.highest_voucher_amount = 1_000;
++        state.spent = 1_000;
++        inner.insert(&channel_id, state.clone());
++        let store = Arc::new(RefreshBarrierStore {
++            inner: inner.clone(),
++            refreshes: AtomicUsize::new(0),
++            barrier: tokio::sync::Barrier::new(2),
++        });
++
++        let asserter = Asserter::new();
++        let on_chain_result = (
++            false,
++            0u64,
++            state.payer,
++            payee,
++            token,
++            signer.address(),
++            100_000u128,
++            0u128,
++        )
++            .abi_encode();
++        asserter.push_success(&Bytes::from(on_chain_result.clone()));
++        asserter.push_success(&Bytes::from(on_chain_result));
++        let provider =
++            ProviderBuilder::new_with_network::<TempoNetwork>().connect_mocked_client(asserter);
++
++        let charge_method = crate::protocol::methods::tempo::ChargeMethod::new(provider.clone());
++        let session_method = SessionMethod::new(
++            provider,
++            store,
++            SessionMethodConfig {
++                escrow_contract: escrow,
++                chain_id: 42431,
++                min_voucher_delta: 1_000,
++            },
++        );
++        let mpp = crate::server::Mpp::new_with_config(
++            charge_method,
++            "MPP Payment",
++            "local-poc-secret",
++            token.to_string(),
++            payee.to_string(),
++        )
++        .with_session_method(session_method);
++
++        let challenge = mpp
++            .session_challenge("1000", &token.to_string(), &payee.to_string())
++            .unwrap();
++        let voucher_amount = 2_000u128;
++        let signature = sign_voucher(&signer, channel_id_b256, voucher_amount, escrow, 42431)
++            .await
++            .unwrap();
++        let credential = PaymentCredential::new(
++            challenge.to_echo(),
++            SessionCredentialPayload::Voucher {
++                channel_id: channel_id.clone(),
++                descriptor: None,
++                settlement_route: None,
++                cumulative_amount: voucher_amount.to_string(),
++                signature: format!("0x{}", alloy::primitives::hex::encode(signature)),
++            },
++        );
++
++        let verify = || mpp.verify_session(&credential);
++        let (first, second) = tokio::join!(verify(), verify());
++
++        let delivered: Vec<_> = [first, second]
++            .into_iter()
++            .filter_map(|result| {
++                let verified = result.ok()?;
++                verified
++                    .management_response
++                    .is_none()
++                    .then(|| "<paid scrape content>")
++            })
++            .collect();
++        assert_eq!(delivered, vec!["<paid scrape content>"; 2]);
++
++        let final_state = inner.get_channel(&channel_id).await.unwrap().unwrap();
++        assert_eq!(final_state.highest_voucher_amount, voucher_amount);
++        assert_eq!(final_state.spent, 1_000, "HTTP verification never debits cost");
++    }
++
+     #[tokio::test]
+     async fn test_accept_voucher_preserves_concurrent_deposit_update() {
+         use crate::protocol::methods::tempo::voucher::sign_voucher;

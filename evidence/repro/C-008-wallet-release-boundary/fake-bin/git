@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${CAPTURE_FILE:?CAPTURE_FILE is required}"
+{
+  printf 'argv='
+  printf '%q ' "$@"
+  printf '\napp_token=%s\n' "${APP_TOKEN-}"
+} > "$CAPTURE_FILE"

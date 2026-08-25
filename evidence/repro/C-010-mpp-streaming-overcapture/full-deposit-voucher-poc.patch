@@ -1,0 +1,80 @@
+diff --git a/src/client/tempo/session/mod.rs b/src/client/tempo/session/mod.rs
+index db2f228..e9d669f 100644
+--- a/src/client/tempo/session/mod.rs
++++ b/src/client/tempo/session/mod.rs
+@@ -2729,6 +2729,75 @@ mod tests {
+         assert_eq!(provider.cumulative(), 2000);
+     }
+
++    /// Local economic PoC: the in-band streaming helper treats the server's
++    /// `requiredCumulative` as authoritative. A compromised endpoint can ask
++    /// for the entire channel deposit even though the challenge price is only
++    /// 1,000 base units, and receives a cryptographically valid voucher. This
++    /// local test does not open the channel or prove on-chain enforceability.
++    #[tokio::test]
++    async fn poc_server_can_request_valid_voucher_for_full_deposit() {
++        use crate::protocol::methods::tempo::{
++            session::SessionCredentialPayload, voucher::verify_voucher,
++        };
++
++        let provider = make_test_provider().with_max_deposit(10_000);
++        let payee = Address::repeat_byte(0x11);
++        let currency = Address::repeat_byte(0x22);
++        let escrow = Address::repeat_byte(0x33);
++        let channel_id = B256::repeat_byte(0x44);
++        let channel_id_hex = channel_id.to_string();
++        let challenge = make_scoped_challenge(payee, currency, escrow);
++
++        *provider.last_challenge.lock().unwrap() = Some(challenge);
++        let key = TempoSessionProvider::channel_key(&payee, &currency, &escrow, 42431);
++        provider
++            .channel_id_to_key
++            .lock()
++            .unwrap()
++            .insert(channel_id_hex.clone(), key.clone());
++        provider.channels.lock().unwrap().insert(
++            key,
++            ChannelEntry {
++                channel_id,
++                salt: B256::ZERO,
++                cumulative_amount: 1_000,
++                deposit: 10_000,
++                escrow_contract: escrow,
++                chain_id: 42431,
++                opened: true,
++                descriptor: None,
++                settlement_route: None,
++            },
++        );
++
++        let credential = provider
++            .voucher_credential(&channel_id_hex, 10_000)
++            .await
++            .expect("the helper currently honors a full-deposit request");
++        let SessionCredentialPayload::Voucher {
++            cumulative_amount,
++            signature,
++            ..
++        } = credential
++            .payload_as::<SessionCredentialPayload>()
++            .unwrap()
++        else {
++            panic!("expected voucher payload")
++        };
++
++        assert_eq!(cumulative_amount, "10000");
++        let signature = alloy::hex::decode(signature.trim_start_matches("0x")).unwrap();
++        assert!(verify_voucher(
++            escrow,
++            42431,
++            channel_id,
++            10_000,
++            &signature,
++            provider.signer.address(),
++        ));
++        assert_eq!(provider.cumulative(), 10_000);
++    }
++
+     #[tokio::test]
+     async fn test_send_voucher_missing_challenge() {
+         let provider = make_test_provider();

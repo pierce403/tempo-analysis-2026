@@ -1,120 +1,168 @@
-Tempo MPP C-012 sanitized evidence
-Date: 2026-08-24
-Mode: local signed dummy state and source review only
+Tempo MPP C-012 reproducible evidence: accepted increment below advertised unit price
+Original investigation date: 2026-08-24
+Portability validation recorded: 2026-08-25T12:43:27Z
+Specification source refresh: 2026-08-25T12:52:51Z
+Mode: local signed dummy state, exact-revision source review, and disposable-clone execution only
 
-PINNED REVISIONS
+PROVENANCE AND PINNED REVISIONS
 
-tempoxyz/mpp-rs current reviewed head
-  fadc88c044b9f8700b58d275bb659d403b231e07
-  git description: v0.11.0-73-gfadc88c
+Repository: https://github.com/tempoxyz/mpp-rs.git
+Reviewed head: fadc88c044b9f8700b58d275bb659d403b231e07
+Published tag v0.11.0 commit: e2e27edc17c1f8274bab982f3dc91477fcc01a44
+Specification source: https://github.com/tempoxyz/mpp-specs.git
+Specification revision: 6de3b4d5d13b4a80310bd80e021c02a4126428e2
 
-published mpp-rs tag v0.11.0
-  e2e27edc17c1f8274bab982f3dc91477fcc01a44
+Committed reproduction fixture in this report repository:
+  evidence/repro/C-012-mpp-rust-unit-price-bypass/full-mpp-unit-price-poc.patch
 
-tempoxyz/mpp-specs
-  6de3b4d5d13b4a80310bd80e021c02a4126428e2
+The fixture is tracked with the report. It adds one deterministic unit test to
+the pinned public mpp-rs source; it does not modify production code.
 
-FULL MPP UNIT-PRICE POC
+TOOLS USED FOR THE 2026-08-25 VALIDATION
 
-Command:
-  cargo test --features tempo,server,client \
-    poc_full_mpp_one_unit_increment_buys_10000_unit_response \
-    -- --nocapture
+  git version 2.53.0
+  cargo 1.97.0 (c980f4866 2026-06-30)
+  rustc 1.97.0 (2d8144b78 2026-07-07)
 
-Result:
+FRESH-CLONE REPRODUCTION
+
+Run from the root of this report repository:
+
+  analysis_root="$(git rev-parse --show-toplevel)"
+  workdir="$(mktemp -d /tmp/tempo-c012.XXXXXX)"
+  git clone https://github.com/tempoxyz/mpp-rs.git "$workdir/mpp-rs"
+  git -C "$workdir/mpp-rs" checkout --detach \
+    fadc88c044b9f8700b58d275bb659d403b231e07
+  git -C "$workdir/mpp-rs" apply --check \
+    "$analysis_root/evidence/repro/C-012-mpp-rust-unit-price-bypass/full-mpp-unit-price-poc.patch"
+  git -C "$workdir/mpp-rs" apply \
+    "$analysis_root/evidence/repro/C-012-mpp-rust-unit-price-bypass/full-mpp-unit-price-poc.patch"
+  cd "$workdir/mpp-rs"
+  cargo +1.97.0 test --features tempo,server,client \
+    poc_full_mpp_one_unit_increment_buys_10000_unit_response -- --nocapture
+
+Expected focused result, reproduced on 2026-08-25:
+
+  running 1 test
   test protocol::methods::tempo::session_method::tests::
     poc_full_mpp_one_unit_increment_buys_10000_unit_response ... ok
-  test result: ok. 1 passed; 0 failed; 1027 filtered out
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured;
+    1023 filtered out
 
-Assertions:
-  authenticated challenge amount / advertised page price: 10,000
-  prior cumulative voucher: 10,000
+The patch also applied cleanly to the published v0.11.0 commit during the
+2026-08-25 check. Re-run that applicability check with:
+
+  git -C "$workdir/mpp-rs" checkout --detach \
+    e2e27edc17c1f8274bab982f3dc91477fcc01a44
+  git -C "$workdir/mpp-rs" apply --check \
+    "$analysis_root/evidence/repro/C-012-mpp-rust-unit-price-bypass/full-mpp-unit-price-poc.patch"
+
+Result on 2026-08-25: exit status 0.
+
+WHAT THE TEST EXECUTES AND ASSERTS
+
+The fixture uses a real HMAC-bound challenge, SessionRequest parsing, a locally
+generated EIP-712 voucher signature, signature verification, the public
+Mpp::verify_session entrypoint, and ABI decoding of an Alloy in-process mock
+getChannel response. It then applies the bundled multi-fetch example's
+non-management-success predicate.
+
+Values asserted by the test:
+
+  authenticated challenge amount / advertised page price P: 10,000
+  prior accepted cumulative authorization: 10,000
   prior durable spent: 10,000
-  valid presented cumulative voucher: 10,001
-  accepted voucher increment: 1
-  available authorization after voucher: 1
+  unused prior authorization: 0
+  presented cumulative authorization: 10,001
+  accepted increment d: 1
+  authorization remaining after verification: 1
   non-management content predicate: success
   final durable spent: 10,000 (unchanged)
 
-The deterministic test uses a real HMAC-bound challenge, real SessionRequest
-parsing, a real locally signed voucher, signature verification, and the public
-Mpp::verify_session entrypoint. The escrow getChannel response is ABI-decoded
-from Alloy's in-process mock transport. The test recreates the example's
-non-management-success predicate; static source shows the bundled handler
-returns protected content for every such success. No live RPC, service,
-channel, credential, key, or payment was used.
+The demonstrated accounting mismatch is underpayment relative to the advertised
+price: P-d = 9,999 units, or 99.99% of the 10,000-unit advertised price for the
+single modeled response. This is not evidence of the merchant's operating
+cost, margin, or realized financial loss.
 
-EXACT CURRENT EXECUTION PATH
+SOURCE PATHS AT THE PINNED REVISION
 
-src/protocol/intents/session.rs:34-44
-  SessionRequest.amount is the authenticated price per unit.
+  src/protocol/intents/session.rs:34-44
+    SessionRequest.amount is the authenticated price per unit
+  examples/session/multi-fetch/src/server.rs:30-33,147-158
+    advertises AMOUNT_PER_REQUEST=10000 with unitType=page
+  examples/session/multi-fetch/src/server.rs:70-80
+    configures min_voucher_delta=0
+  src/server/mpp.rs:1105-1149
+    decodes the authenticated request and forwards it to the session method
+  src/protocol/methods/tempo/session_method.rs:904-1027,1375-1425,1469-1577
+    accepts a positive voucher increment under the configured minimum-delta
+    policy without binding that increment to request.amount or debiting spent
+  examples/session/multi-fetch/src/server.rs:101-137
+    returns content for non-management verification success without an atomic
+    per-request spent debit
 
-examples/session/multi-fetch/src/server.rs:30-33,147-158
-  Advertises AMOUNT_PER_REQUEST=10000 with unitType=page.
+Re-run the source view from a pinned clone with, for example:
 
-examples/session/multi-fetch/src/server.rs:70-80
-  Configures min_voucher_delta=0.
+  git show fadc88c044b9f8700b58d275bb659d403b231e07:\
+src/protocol/intents/session.rs | nl -ba | sed -n '34,44p'
+  git show fadc88c044b9f8700b58d275bb659d403b231e07:\
+src/protocol/methods/tempo/session_method.rs | nl -ba | \
+    sed -n '904,1027p;1375,1425p;1469,1577p'
+  git show fadc88c044b9f8700b58d275bb659d403b231e07:\
+examples/session/multi-fetch/src/server.rs | nl -ba | \
+    sed -n '30,80p;101,158p'
 
-src/server/mpp.rs:1105-1149
-  Decodes the authenticated request and checks currency/recipient, then
-  forwards it to the session method.
+PINNED SPECIFICATION REQUIREMENTS
 
-src/protocol/methods/tempo/session_method.rs:1469-1577
-  Uses the request for method details, payee, and token; the voucher branch
-  calls handle_voucher without request amount or cost.
+At mpp-specs revision 6de3b4d5d13b4a80310bd80e021c02a4126428e2,
+run:
 
-src/protocol/methods/tempo/session_method.rs:904-1027,1375-1425
-  Enforces only the configured minimum delta, then persists the voucher and
-  returns success without incrementing spent. A positive one-unit delta passes
-  when min_voucher_delta is zero even though only one unspent unit is available.
+  git clone https://github.com/tempoxyz/mpp-specs.git /tmp/mpp-specs-c012
+  git -C /tmp/mpp-specs-c012 checkout --detach \
+    6de3b4d5d13b4a80310bd80e021c02a4126428e2
+  git -C /tmp/mpp-specs-c012 show HEAD:\
+specs/methods/tempo/draft-tempo-session-00.md | nl -ba | \
+    sed -n '570,594p;1304,1354p;1394,1416p'
 
-examples/session/multi-fetch/src/server.rs:101-137
-  Treats every non-management verify_session success as payment and returns
-  protected content without an atomic per-request spent debit.
+Source result refreshed at 2026-08-25T12:52:51Z:
 
-The same example is byte-identical at v0.11.0, and the release's voucher path
-also omits authenticated amount and request-cost debit.
+  lines 578-588: amount is price per unit, and total cost is amount multiplied
+    by units consumed
+  lines 1304-1332: the server tracks accepted cumulative authorization and
+    spent, with available=acceptedCumulative-spent
+  lines 1334-1354: each request computes cost, requires available>=cost, and
+    persists spent+=cost before or atomically with delivery
+  lines 1394-1416: fixed or usage-based cost is server-accounted, and streaming
+    delivery must pause when available authorization is exhausted
 
-LOSS BOUND
+The advertised-price shortfall measured by this PoC compares the official
+example's accepted one-unit increment with these pinned normative accounting
+requirements. It does not assign a merchant cost or realized loss.
 
-For advertised per-response price P and accepted increment d, unpaid value per
-response is P-d. In the bundled example P=10000 and the smallest accepted
-positive d=1, producing 9999 units (99.99%) underpayment per response. The
-pattern can repeat with successively higher valid vouchers, subject to deposit
-headroom, concurrency/rate limits, top-up, and application controls.
+REPEATABILITY BOUND
 
-AFFECTED AND UNDEMONSTRATED PATTERNS
+The one-response mismatch above is executed. Static source inspection suggests
+that a payer with sufficient deposit headroom can present successively higher
+valid vouchers and repeat the pattern when min_voucher_delta remains below the
+route price. That repetition was not exercised by this fixture and remains an
+inference subject to concurrency, rate limits, top-up policy, and application
+controls.
 
-Confirmed:
-  - bundled multi-fetch example at current head and published v0.11.0;
-  - verification-only request/response handlers with min delta below cost;
-  - variable-price handlers that rely on one static min delta instead of an
-    atomic debit of the authenticated per-request cost.
+LIMITATIONS AND SAFETY BOUNDARY
 
-Not shown affected:
-  - bundled SSE and WebSocket paths, which atomically debit per event/frame;
-  - applications that atomically require available authorization and persist
-    spent += request cost before delivery;
-  - current TypeScript integrations, which require separate reproduction.
-
-SPECIFICATION AND PRIOR ART
-
-The pinned Tempo session draft says amount is price per unit and requires each
-paid request to compute cost, check acceptedCumulative-spent, and persist
-spent += cost before or atomically with delivery. minVoucherDelta is a server
-policy/anti-flood threshold, not the authenticated resource charge.
-
-The example pattern dates to commit
-acf42ea5887b979d3dcd68d8c4cf9b054622b69d. Public security commit
-d95c787835559e25b25b46fa9e262f33fb1c88cd / GHSA-fxc9-7j2w-vx54 and replay
-fix 3b167f47ef2019f4b6b407828b31d1d9acda57d3 did not add a per-request price
-debit. Private awareness and production adoption remain unknown.
-
-REMEDIATION
-
-Use one linearizable request-payment operation that persists a higher voucher
-if needed, derives a server-owned route cost, requires sufficient unspent
-authorization, increments spent by that cost, and only then permits delivery.
-Keep minVoucherDelta as an independent anti-flood control. Update the bundled
-example and add tests where challenge price exceeds the presented voucher
-increment.
+- The test executes Mpp::verify_session and recreates the bundled example's
+  simple non-management success predicate. It does not launch Axum or invoke
+  the example's actual HTTP handler over a socket.
+- It proves the behavior for the in-memory store and reviewed example/source;
+  it does not establish that every production or third-party integration uses
+  this pattern.
+- The bundled SSE and WebSocket paths debit per event/frame and were not shown
+  affected.
+- Applications that derive a server-owned route cost and atomically debit that
+  cost before delivery are not shown affected.
+- Current TypeScript integrations were not tested for C-012.
+- mpp-rs does not commit Cargo.lock at the pinned revision, so dependency
+  resolution can drift. The exact compiler/tool versions and validation time
+  above bound this execution; future reruns should record their resolved graph.
+- No live RPC, public endpoint, production server, payment, channel, credential,
+  victim key, load test, or third-party service was used.

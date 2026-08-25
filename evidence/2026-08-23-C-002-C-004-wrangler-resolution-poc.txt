@@ -21,8 +21,8 @@ Current tempoxyz/tempo-apps main (confirmed 2026-08-23):
   CLOUDFLARE_API_TOKEN in a PR-selected app working directory. The deploy job declares no
   GitHub Environment. Workflow SHA-256:
   757c5b261fbec052821db845bc30f983b23e283ad39e24f3a7e8402b784e40d7
-- The pinned action is cloudflare/wrangler-action@ebbaa1584979 (12-character commit
-  abbreviation; the full pin is in the referenced source). Its immutable bundle sets the Cloudflare values
+- The pinned action is
+  cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0. Its immutable bundle sets the Cloudflare values
   in process.env before resolving/checking Wrangler from the supplied working directory.
   Bundle SHA-256:
   271be2c531712086619bb8d230267c30237e56cfa4f097d045c6646095858658
@@ -48,48 +48,55 @@ Current tempoxyz/accounts main (confirmed 2026-08-23):
 - The repository-local install action permits lifecycle execution and later branch-controlled
   build scripts. Composite-action SHA-256:
   7139588e32d3f6fa0cdc4c3baf0f3953f3e52dfc50b038acb680b69b5bcae032
-- The pinned cloudflare/wrangler-action commit is 9acf94ace14e (12-character abbreviation; the
-  full pin is in the referenced source). Its immutable bundle has the same relevant order:
+- The pinned cloudflare/wrangler-action commit is
+  9acf94ace14e7dc412b076f2c5c20b8ce93c79cd. Its immutable bundle has the same relevant order:
   authentication environment setup, then app-directory npx/Wrangler resolution. Bundle SHA-256:
   7a0f70a778a83a064e4819e1a4baca127c0c8a5fc3c11f1f67ab331a09bee9dd
 - Public run 32402773241 on same-repository PR #773 completed both matrix jobs' checkout,
   dependency installation, build phases, and authenticated Preview step (jobs 96534650602 and
   96534650912). This proves route reachability; it does not establish production token scope.
 
-Synthetic executable
---------------------
-Path: target/supply-chain/repro-wrangler-path/app/node_modules/.bin/wrangler
-SHA-256: a6b898916a6d85f060148f83531e5cecda6fec77276ae19f4695927535577c11
-Behavior: prints a parseable Wrangler version and copies the named dummy environment value
-to a local capture path.
+Re-run command/procedure
+------------------------
+From the root of this repository:
 
-C-002 command
--------------
-Working directory: target/supply-chain/repro-wrangler-path/app
+  bash evidence/repro/C-002-C-004-wrangler-path/repro.sh
 
-env CLOUDFLARE_API_TOKEN=DUMMY_TEMPO_APPS_TOKEN_NOT_A_SECRET \
-  REPRO_CAPTURE=/tmp/tempo-report-c002.txt \
-  npx --no-install wrangler --version
+The committed fixture is self-contained, creates a disposable directory, uses literal dummy
+values, and exits nonzero unless both modeled cases resolve the workspace executable and capture
+the expected dummy value. Fixture hashes at the 2026-08-25 portability refresh:
 
-Observed stdout:
-wrangler 4.0.0
+  afcd70c34d2f914216f15a201f6c47ccf3db7293c8785efff3c133a3a6960cef  fake-wrangler.sh
+  a5b1e8a7bae92227800bc420c00c8b6457fe2d90a6d406675fdadd6d2a6377ad  package.json
+  94c35e57cff924ec2612227cb1f7f46aca75eec4e456677fff3565fa728b4d5e  repro.sh
 
-Observed local capture:
-DUMMY_TEMPO_APPS_TOKEN_NOT_A_SECRET
+To verify the immutable public workflow/run inputs independently:
 
-C-004 command
--------------
-Working directory: target/supply-chain/repro-wrangler-path/app
+  git clone https://github.com/tempoxyz/tempo-apps.git
+  git -C tempo-apps checkout 5374dff9f01d050be7b9ab8d8d37349cf9506c76
+  git -C tempo-apps show HEAD:.github/workflows/pull-request.yml
+  gh api -i repos/tempoxyz/tempo-apps/actions/runs/30842288164
+  gh api --paginate repos/tempoxyz/tempo-apps/actions/runs/30842288164/jobs
 
-env CLOUDFLARE_API_TOKEN=DUMMY_ACCOUNTS_TOKEN_NOT_A_SECRET \
-  REPRO_CAPTURE=/tmp/tempo-report-c004.txt \
-  npx --no-install wrangler --version
+  git clone https://github.com/tempoxyz/accounts.git
+  git -C accounts checkout bff90b590894e074d2cd25e9ee9d5b197813ff33
+  git -C accounts show HEAD:.github/workflows/deploy-workers.yml
+  gh api -i repos/tempoxyz/accounts/actions/runs/32402773241
+  gh api --paginate repos/tempoxyz/accounts/actions/runs/32402773241/jobs
 
-Observed stdout:
-wrangler 4.0.0
+Captured result
+---------------
+Captured result: exit 0 for both dummy cases.
 
-Observed local capture:
-DUMMY_ACCOUNTS_TOKEN_NOT_A_SECRET
+The original 2026-08-23 execution and the committed-fixture refresh both returned:
+
+  C-002 stdout=wrangler 4.0.0 capture=DUMMY_TEMPO_APPS_TOKEN_NOT_A_SECRET
+  C-004 stdout=wrangler 4.0.0 capture=DUMMY_ACCOUNTS_TOKEN_NOT_A_SECRET
+
+The GitHub API commands are read-only and may return newer metadata or require authentication
+after public rate limits. They should be reduced to safe run/job identifiers, head SHA, actor
+association, step names, conclusions, and response date; never commit tokens or response headers
+containing authorization material.
 
 Impact demonstrated
 -------------------

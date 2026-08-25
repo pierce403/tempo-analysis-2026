@@ -4,6 +4,22 @@ Evidence type: local regression test and proof-only patch
 wallet-cli revision: 677e52278eaafa4ec356ed9c750446fba320cdfa
 Safety: local code/tests only; no device code, wallet, key, transaction, or network authorization
 
+Re-run command/procedure
+------------------------
+Acquire the public source once, then run the committed patches in a disposable clone:
+
+  git clone https://github.com/tempoxyz/wallet-cli.git wallet-cli-public
+  git -C wallet-cli-public checkout 677e52278eaafa4ec356ed9c750446fba320cdfa
+  bash evidence/repro/C-009-wallet-authority-output/repro.sh wallet-cli-public
+
+The runner applies the regression, requires the unmodified behavior to fail, applies the separate
+display-only diagnostic, then requires all 40 identity tests and TypeScript compilation to pass.
+It may need ordinary npm-registry access for the pinned dependencies. Committed asset hashes:
+
+  26f53da9493bc3f70ac8d315383686035f5437d4588902f6272eb77e7237ac9e  omitted-limit-regression.patch
+  979c9bace78135d812ed932516c92905e5d7152554d326b8fdc7c5831c6fae63  display-only-diagnostic.patch
+  6fbe6b915bf424d0c3a32d240890bef94a53b5219cef90448f5cee60536b06b3  repro.sh
+
 Original behavior
 -----------------
 The regression constructs the normalized form of an access key whose limits were omitted and
@@ -23,6 +39,13 @@ FAIL  test/identity.test.ts > identity commands > reports an omitted-limit acces
 
 Test Files  1 failed (1)
 Tests       1 failed | 39 skipped (40)
+
+Captured result from the portable refresh:
+
+  executed_utc=2026-08-25T13:00:42Z
+  revision=677e52278eaafa4ec356ed9c750446fba320cdfa
+  regression_patch_sha256=26f53da9493bc3f70ac8d315383686035f5437d4588902f6272eb77e7237ac9e
+  upstream_regression_exit=1 (expected nonzero)
 
 Proof-only display change
 -------------------------
@@ -55,6 +78,7 @@ enforcement/scope modes.
 
 Not demonstrated
 ----------------
-- The public approval UI visibly labels a missing token limit as Unlimited.
+- This transcript does not preserve a timestamped public-UI request or asset hash, so it makes no
+  claim about the current approval UI rendering.
 - The private hosted server may inject a finite token limit; no production POST was made.
 - The output mismatch does not provide the initial workstation/dependency/update compromise.

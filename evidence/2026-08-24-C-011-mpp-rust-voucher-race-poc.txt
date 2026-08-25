@@ -1,158 +1,152 @@
-Tempo MPP C-011 sanitized evidence
-Date: 2026-08-24
-Mode: local signed dummy state and source review only
+Tempo MPP C-011 reproducible evidence: concurrent voucher replay crosses two content predicates
+Original investigation date: 2026-08-24
+Portability validation recorded: 2026-08-25T12:43:27Z
+Mode: local signed dummy state, exact-revision source review, and disposable-clone execution only
 
-PINNED REVISIONS
+PROVENANCE AND PINNED REVISIONS
 
-tempoxyz/mpp-rs current reviewed head
-  fadc88c044b9f8700b58d275bb659d403b231e07
-  git description: v0.11.0-73-gfadc88c
+Repository: https://github.com/tempoxyz/mpp-rs.git
+Reviewed head: fadc88c044b9f8700b58d275bb659d403b231e07
+Published tag v0.11.0 commit: e2e27edc17c1f8274bab982f3dc91477fcc01a44
+Specification source: https://github.com/tempoxyz/mpp-specs.git
+Specification revision: 6de3b4d5d13b4a80310bd80e021c02a4126428e2
 
-published mpp-rs tag v0.11.0
-  e2e27edc17c1f8274bab982f3dc91477fcc01a44
+Committed reproduction fixture in this report repository:
+  evidence/repro/C-011-mpp-rust-voucher-race/full-mpp-content-gate-poc.patch
 
-tempoxyz/mpp-specs
-  6de3b4d5d13b4a80310bd80e021c02a4126428e2
+The fixture is tracked with the report. It adds one deterministic unit test to
+the pinned public mpp-rs source; it does not modify production code.
 
-FOCUSED CONCURRENCY POC
+TOOLS USED FOR THE 2026-08-25 VALIDATION
 
-Command:
-  cargo test --features tempo,server,client \
-    poc_concurrent_same_voucher_authenticates_twice_for_one_increment \
-    -- --nocapture
+  git version 2.53.0
+  cargo 1.97.0 (c980f4866 2026-06-30)
+  rustc 1.97.0 (2d8144b78 2026-07-07)
 
-Result:
-  test protocol::methods::tempo::session_method::tests::
-    poc_concurrent_same_voucher_authenticates_twice_for_one_increment ... ok
-  test result: ok. 1 passed; 0 failed; 1025 filtered out
+FRESH-CLONE REPRODUCTION
 
-Test assertions:
-  initial cumulative voucher: 1,000
-  one valid presented cumulative voucher: 2,000
-  concurrent verification/delivery-gate successes: 2
-  final durable cumulative voucher: 2,000
+Run from the root of this report repository:
 
-The test uses a real EIP-712 signed voucher and tokio concurrency. Both calls
-capture the same old snapshot, both validate the increment, one atomic update
-advances durable state, and the losing atomic transition returns the new state
-as success rather than reporting replay/CAS loss.
+  analysis_root="$(git rev-parse --show-toplevel)"
+  workdir="$(mktemp -d /tmp/tempo-c011.XXXXXX)"
+  git clone https://github.com/tempoxyz/mpp-rs.git "$workdir/mpp-rs"
+  git -C "$workdir/mpp-rs" checkout --detach \
+    fadc88c044b9f8700b58d275bb659d403b231e07
+  git -C "$workdir/mpp-rs" apply --check \
+    "$analysis_root/evidence/repro/C-011-mpp-rust-voucher-race/full-mpp-content-gate-poc.patch"
+  git -C "$workdir/mpp-rs" apply \
+    "$analysis_root/evidence/repro/C-011-mpp-rust-voucher-race/full-mpp-content-gate-poc.patch"
+  cd "$workdir/mpp-rs"
+  cargo +1.97.0 test --features tempo,server,client \
+    poc_full_mpp_verify_session_crosses_content_gate_twice -- --nocapture
 
-FULL MPP / CONTENT-GATE POC
+Expected focused result, reproduced on 2026-08-25:
 
-Command:
-  cargo test --features tempo,server,client \
-    poc_full_mpp_verify_session_crosses_content_gate_twice \
-    -- --nocapture
-
-Result:
+  running 1 test
   test protocol::methods::tempo::session_method::tests::
     poc_full_mpp_verify_session_crosses_content_gate_twice ... ok
-  test result: ok. 1 passed; 0 failed; 1026 filtered out
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured;
+    1023 filtered out
 
-The stronger deterministic witness runs through real Mpp::verify_session,
-HMAC-bound challenge and credential parsing, real signed-voucher verification,
-and ABI decoding of an Alloy in-process mock getChannel response. A barrier
-forces both refreshes to capture the same old durable state. Both requests pass
-the non-management success predicate used by the bundled multi-fetch content
-gate. Assertions:
+The patch also applied cleanly to the published v0.11.0 commit during the
+2026-08-25 check. Re-run that applicability check with:
 
-  initial durable cumulative voucher: 1,000
-  presented cumulative voucher: 2,000
-  protected-content gate successes: 2
-  final durable cumulative voucher: 2,000
-  final durable spent: 0
+  git -C "$workdir/mpp-rs" checkout --detach \
+    e2e27edc17c1f8274bab982f3dc91477fcc01a44
+  git -C "$workdir/mpp-rs" apply --check \
+    "$analysis_root/evidence/repro/C-011-mpp-rust-voucher-race/full-mpp-content-gate-poc.patch"
 
-No live RPC, service, channel, key, credential, or payment was used.
+Result on 2026-08-25: exit status 0.
 
-EXACT CURRENT EXECUTION PATH
+WHAT THE TEST EXECUTES AND ASSERTS
 
-src/protocol/methods/tempo/session_method.rs:930-1027
-  handle_voucher obtains/refreshed channel state, then passes the snapshot to
-  voucher acceptance.
+The fixture calls the public Mpp::verify_session path twice concurrently. It
+uses an HMAC-bound challenge, credential parsing, a real locally generated
+EIP-712 voucher signature, signature verification, and ABI decoding of an
+Alloy in-process mock getChannel response. A barrier makes both verification
+calls capture the same pre-update channel snapshot.
 
-src/protocol/methods/tempo/session_method.rs:1341-1381
-  replay/minimum-delta checks run against that pre-update snapshot.
+Initial and final values asserted by the test:
 
-src/protocol/methods/tempo/session_method.rs:1383-1399
-  verifies the real voucher signature.
+  initial accepted cumulative authorization A0: 1,000
+  initial durable spent spent0: 1,000
+  unused prior authorization U=max(0,A0-spent0): 0
+  presented cumulative authorization: 2,000
+  accepted increment delta: 1,000
+  verification/content-predicate successes N: 2
+  final accepted cumulative authorization: 2,000
+  final durable spent: 1,000
 
-src/protocol/methods/tempo/session_method.rs:1401-1421
-  atomic update winner advances the voucher. A loser whose amount is now no
-  longer higher returns Ok(Some(state)) as a no-op.
+Both verification calls return a non-management success, so both satisfy the
+same predicate used by the bundled multi-fetch example before it returns
+protected content. The durable voucher advances only once and spent does not
+advance. The test intentionally starts with spent=1,000 so the previous
+1,000-unit authorization is fully consumed; there is no unused prior authority
+that could otherwise pay for the second response.
 
-src/protocol/methods/tempo/session_method.rs:1423-1425
-  both branches become success receipts.
+ECONOMIC BOUND
 
-src/server/mpp.rs:1105-1170
-  verify_session propagates that success to the application.
+Let:
 
-examples/session/multi-fetch/src/server.rs:101-137
-  concurrent HTTP requests call verify_session and return protected content for
-  each success. The handler does not atomically debit spent before delivery.
+  N = responses delivered after validations against the same old snapshot
+  P = advertised price of one response
+  A0 = accepted cumulative authorization before the race
+  spent0 = durable spend before the race
+  U = max(0, A0 - spent0), unused authorization before the race
+  delta = newly accepted cumulative voucher increment
 
-The relevant voucher-acceptance logic and the multi-fetch handler are also
-present in published v0.11.0. The example file is byte-identical between the
-tag and reviewed head, and the focused patch applies cleanly to both.
+Underpayment relative to the advertised total is bounded by:
 
-LOSS BOUND
+  max(0, N * P - (U + delta))
 
-For N requests that reach validation against the same old snapshot, up to N
-protected responses can satisfy the delivery predicate while voucher value
-advances by one accepted increment delta. If each response has value P,
-uncompensated exposure is:
+Only in the special case U=0 and delta=P does that simplify to:
 
-  max(0, N * P - delta)
+  (N - 1) * P
 
-When delta correctly prices one response (delta = P), race-only duplicate loss
-is (N - 1) * P.
+The committed test is exactly that special case: N=2, P=1,000, U=0, and
+delta=1,000, so the demonstrated underpayment relative to the two advertised
+responses is 1,000 units. This is an advertised-price accounting statement,
+not proof of the merchant's cost, profit, or realized financial loss.
 
-N is limited by server concurrency and timing. The pattern can repeat with
-successive higher vouchers. No signature forgery or victim payer key is needed;
-the dishonest payer needs its own funded channel and signer.
+SOURCE PATHS AT THE PINNED REVISION
 
-AFFECTED AND UNDEMONSTRATED PATTERNS
+  src/protocol/methods/tempo/session_method.rs:930-1027
+    refreshes channel state before voucher acceptance
+  src/protocol/methods/tempo/session_method.rs:1341-1399
+    evaluates replay/minimum-delta checks and verifies the voucher signature
+    against the captured snapshot
+  src/protocol/methods/tempo/session_method.rs:1401-1425
+    advances the winner; a now-non-increasing loser returns a successful no-op,
+    and both branches produce success receipts
+  src/server/mpp.rs:1105-1170
+    propagates verification success to the application
+  examples/session/multi-fetch/src/server.rs:101-137
+    calls verify_session and returns content for non-management success without
+    an atomic request-cost debit
 
-Confirmed:
-  - bundled multi-fetch delivery pattern at current head and v0.11.0;
-  - applications that treat verify_session success as authorization for one
-    paid response without atomically debiting per-request spent;
-  - in-memory and single-process adapter stores. Correct update serialization
-    does not reject the losing request.
+Re-run the source view from a pinned clone with, for example:
 
-Not shown affected by this specific duplicate-delivery path:
-  - bundled SSE, which atomically deducts before each event;
-  - bundled WebSocket session serving, which deducts before each data frame;
-  - applications that perform a linearizable per-request debit before delivery.
+  git show fadc88c044b9f8700b58d275bb659d403b231e07:\
+src/protocol/methods/tempo/session_method.rs | nl -ba | sed -n '930,1027p;1341,1425p'
+  git show fadc88c044b9f8700b58d275bb659d403b231e07:\
+src/server/mpp.rs | nl -ba | sed -n '1105,1170p'
+  git show fadc88c044b9f8700b58d275bb659d403b231e07:\
+examples/session/multi-fetch/src/server.rs | nl -ba | sed -n '101,137p'
 
-PUBLIC PRIOR ART
+LIMITATIONS AND SAFETY BOUNDARY
 
-  d95c787835559e25b25b46fa9e262f33fb1c88cd
-  GHSA-fxc9-7j2w-vx54 / PR #171
-  Fixed earlier multiple-payment bypasses, but not this no-op success branch.
-
-  b609ed0fb8d806afb9e97c8e8c2961d58a701f8e / PR #177
-  Serialized same-channel ChannelStoreAdapter updates. This PoC succeeds with a
-  correctly serialized store.
-
-  3b167f47ef2019f4b6b407828b31d1d9acda57d3 / PR #247
-  Rejects sequential voucher replay against the pre-update snapshot. Concurrent
-  requests still pass that check before the winner advances state.
-
-SPECIFICATION CONFLICT
-
-mpp-specs draft-tempo-session-00.md requires per-channel voucher acceptance and
-balance deduction to be serialized, accounting updates to be linearizable, and
-spent to be persisted before or atomically with delivery. Exact management
-voucher retries can be idempotent, but a replay/no-op must not be mistaken for
-fresh authorization to deliver another paid resource.
-
-REMEDIATION PROPERTY
-
-Combine voucher advancement, request-cost balance validation, and spent debit
-in one linearizable transition. Only its winner may cross the paid-delivery
-gate. Return a distinguishable replay/CAS-loss result to other requests, while
-preserving management-only idempotency separately.
-
-No public endpoint, payment, production server, credential, or third-party
-service was tested. The exact local patch remains in the ignored findings
-directory.
+- The test executes Mpp::verify_session and recreates the bundled example's
+  simple non-management success predicate. It does not launch Axum or invoke
+  the example's actual HTTP handler over a socket.
+- It proves the behavior for the in-memory store and the reviewed control flow;
+  it does not establish that every third-party store or production integration
+  is affected.
+- The bundled SSE and WebSocket delivery paths debit before each event/frame
+  and were not shown affected by this duplicate-delivery path.
+- Applications that perform a linearizable request-cost debit before delivery
+  are not shown affected.
+- mpp-rs does not commit Cargo.lock at the pinned revision, so dependency
+  resolution can drift. The exact compiler/tool versions and validation time
+  above bound this execution; future reruns should record their resolved graph.
+- No live RPC, public endpoint, production server, payment, channel, credential,
+  victim key, load test, or third-party service was used.

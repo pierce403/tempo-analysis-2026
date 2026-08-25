@@ -1,245 +1,408 @@
-Tempo MPP C-010 sanitized evidence
-Date: 2026-08-24
-Mode: local/dummy execution plus passive JSON-RPC reads only
+Tempo MPP C-010 reproducible evidence: streaming authorization overcapture and high-water settlement
+Original investigation date: 2026-08-24
+Portability validation recorded: 2026-08-25T12:49:05Z
+Passive JSON-RPC refresh: 2026-08-25T12:44:43Z
+OpenClaw source refresh: 2026-08-25T12:45:16Z
+Rust full-suite validation recorded: 2026-08-25T12:52:08Z
+Scheduled-settlement and public-PR refresh: 2026-08-25T12:52:31Z
+Specification source refresh: 2026-08-25T12:52:51Z
+Mode: local dummy execution, exact-revision source review, and passive JSON-RPC reads only
 
-PINNED REVISIONS
+PROVENANCE AND PINNED REVISIONS
 
-wevm/mppx
-  current reviewed head: 3f73a17eeba9522d90894099635a43d6d2934cf5
-  released mppx@0.8.19: e2e8e375db4bb0ba4d8686138a658d2132ace5b7
-  OpenClaw-locked mppx@0.8.15: ae3548dd3ec40e6b4a024fa72819d8411246025e
+wevm/mppx: https://github.com/wevm/mppx.git
+  reviewed head: 3f73a17eeba9522d90894099635a43d6d2934cf5
+  released mppx@0.8.19 commit: e2e8e375db4bb0ba4d8686138a658d2132ace5b7
+  released mppx@0.8.15 commit: ae3548dd3ec40e6b4a024fa72819d8411246025e
 
-tempoxyz/mpp-rs
-  fadc88c044b9f8700b58d275bb659d403b231e07
+tempoxyz/mpp-rs: https://github.com/tempoxyz/mpp-rs.git
+  reviewed head: fadc88c044b9f8700b58d275bb659d403b231e07
 
-tempoxyz/mpp-specs
-  6de3b4d5d13b4a80310bd80e021c02a4126428e2
+tempoxyz/mpp-specs: https://github.com/tempoxyz/mpp-specs.git
+  reviewed revision: 6de3b4d5d13b4a80310bd80e021c02a4126428e2
 
-tempoxyz/tempo
-  18c174325061fa07ef577ef3fd59f5a7869bd556
+tempoxyz/tempo: https://github.com/tempoxyz/tempo.git
+  reviewed revision: 18c174325061fa07ef577ef3fd59f5a7869bd556
 
-tempoxyz/openclaw-mpp
-  4e30d5677145c5e5c4aebd1c7a3d372f072db419
+tempoxyz/openclaw-mpp: https://github.com/tempoxyz/openclaw-mpp.git
+  reviewed revision: 4e30d5677145c5e5c4aebd1c7a3d372f072db419
 
-TYPESCRIPT CLIENT POC
+COMMITTED REPRODUCTION FIXTURES
 
-Command:
-  VITE_TEMPO_NETWORK=none pnpm exec vp test run \
+  evidence/repro/C-010-mpp-streaming-overcapture/Skimming.poc.test.ts
+  evidence/repro/C-010-mpp-streaming-overcapture/SettlementSkim.poc.test.ts
+  evidence/repro/C-010-mpp-streaming-overcapture/full-deposit-voucher-poc.patch
+
+All three fixtures are tracked with this report. The TypeScript files are
+standalone local tests copied into a pinned checkout. The Rust patch adds one
+local unit test and does not modify production behavior.
+
+TOOLS USED FOR THE 2026-08-25 VALIDATION
+
+  git version 2.53.0
+  node v23.9.0
+  pnpm 11.0.8 (the mppx packageManager pin)
+  cargo 1.97.0 (c980f4866 2026-06-30)
+  rustc 1.97.0 (2d8144b78 2026-07-07)
+
+TYPESCRIPT FRESH-CLONE REPRODUCTION
+
+Run from the root of this report repository:
+
+  analysis_root="$(git rev-parse --show-toplevel)"
+  workdir="$(mktemp -d /tmp/tempo-c010-mppx.XXXXXX)"
+  git clone https://github.com/wevm/mppx.git "$workdir/mppx"
+  git -C "$workdir/mppx" checkout --detach \
+    3f73a17eeba9522d90894099635a43d6d2934cf5
+  cp "$analysis_root/evidence/repro/C-010-mpp-streaming-overcapture/Skimming.poc.test.ts" \
+    "$workdir/mppx/src/tempo/session/client/Skimming.poc.test.ts"
+  cp "$analysis_root/evidence/repro/C-010-mpp-streaming-overcapture/SettlementSkim.poc.test.ts" \
+    "$workdir/mppx/src/tempo/session/server/SettlementSkim.poc.test.ts"
+  cd "$workdir/mppx"
+  corepack pnpm install --frozen-lockfile
+  VITE_TEMPO_NETWORK=none corepack pnpm exec vp test run \
     src/tempo/session/client/Skimming.poc.test.ts \
-    --project node --reporter verbose
-
-Result:
-  SKIMMING_POC {
-    "applicationMessagesDelivered": 0,
-    "initialUnitPrice": "1",
-    "managementRequestMethods": ["GET", "GET", "POST"],
-    "merchantAuthorizationDelta": "99",
-    "openedDeposit": "100",
-    "signatureValid": true,
-    "signedVoucherCumulative": "100"
-  }
-  Test Files  1 passed (1)
-  Tests       1 passed (1)
-
-Interpretation:
-  The actual managed SSE client constructed a 100-unit channel-open transaction
-  and credential for a one-unit quote, processed a server payment-control event
-  before any application event, signed and posted a cumulative-100 voucher, and
-  independently verified the voucher signature. No channel was opened and no
-  RPC call, wallet balance, or live endpoint was used.
-
-TYPESCRIPT SETTLEMENT POC
-
-Command:
-  VITE_TEMPO_NETWORK=none pnpm exec vp test run \
     src/tempo/session/server/SettlementSkim.poc.test.ts \
     --project node --reporter verbose
 
-Result:
-  SETTLEMENT_SKIM_POC {
-    "capturedAboveSpent": "99",
-    "highestVoucher": "100",
-    "recordedSpent": "1",
-    "settleSubmittedCumulative": "100"
+Result reproduced on 2026-08-25:
+
+  SKIMMING_POC {
+    "applicationMessagesDelivered":0,
+    "initialUnitPrice":"1",
+    "managementRequestMethods":["GET","GET","POST"],
+    "merchantAuthorizationDelta":"99",
+    "openedDeposit":"100",
+    "signatureValid":true,
+    "signedVoucherCumulative":"100"
   }
-  Test Files  1 passed (1)
-  Tests       1 passed (1)
+  SETTLEMENT_SKIM_POC {
+    "capturedAboveSpent":"99",
+    "highestVoucher":"100",
+    "recordedSpent":"1",
+    "settleSubmittedCumulative":"100"
+  }
+  Test Files  2 passed (2)
+  Tests       2 passed (2)
 
-Interpretation:
-  The exported mppx settle() helper loaded real channel-store state with a
-  highest voucher of 100 and recorded spend of one. With chain I/O stubbed, it
-  passed 100 to the actual chain-settlement boundary. Scheduled settlement calls
-  this same helper.
+What the client test proves:
 
-MATERIAL MPPX SOURCE
+- The actual managed SSE client accepted a one-unit challenge and a mocked
+  server payment-control event requiring cumulative authorization of 100.
+- It constructed a serialized transaction that would open a 100-unit channel,
+  produced a cumulative-100 voucher, and independently verified the voucher's
+  EIP-712 signature before any application message was delivered.
+- The test did not submit the open transaction. It did not open an on-chain
+  channel, mutate chain state, or make a network call.
 
-  src/tempo/session/client/Transports.ts:409-445
-    Uses server requiredCumulative after channel and optional-cap checks.
+What the settlement test proves:
 
-  src/tempo/session/client/Runtime.ts:428-478,514-556
-    Local cap is only an absolute ceiling; uncapped automatic top-up accepts the
-    server-influenced proposal.
+- The exported mppx settle() helper loaded local state with highest voucher 100
+  and recorded spent 1.
+- With every chain operation mocked, the helper passed cumulative amount 100 to
+  its settleOnChain call boundary rather than recorded spent 1.
+- It did not submit a transaction or prove a production settlement occurred.
 
-  src/tempo/session/client/SessionManager.ts:164-178
-    maxDeposit is optional.
+The ordinary and scheduled settlement call chain is directly visible at the
+pinned mppx revision. Re-run the exact source view with:
 
-  src/tempo/session/server/Settlement.ts:440-519
-    maybeSettleScheduled calls settle(); settle submits
-    highestVoucher.cumulativeAmount rather than spent.
+  git show 3f73a17eeba9522d90894099635a43d6d2934cf5:\
+src/tempo/session/server/Settlement.ts | nl -ba | sed -n '440,550p'
 
-  src/tempo/session/precompile/Voucher.ts:86-113
-    Signs the EIP-712 cumulative voucher.
+Result refreshed at 2026-08-25T12:52:13Z:
 
-The same client and settlement behavior is present in tags mppx@0.8.15 and
-mppx@0.8.19. The high-water settlement line originated in commit
-6ae92c4e9417e8324740b8bdb883f8856ca84bf9 (mppx PR #510).
+  lines 441-456: maybeSettleScheduled() calls settle() when its schedule is due
+  lines 460-472: settle() loads the precompile-backed channel and voucher
+  line 487: amount = uint96(channel.highestVoucher.cumulativeAmount)
+  lines 501-518: that amount is passed to the machine or ordinary on-chain
+    settlement call
 
-INHERENT ONE-WINDOW WITNESS
+The function records current.spent only after settlement as
+lastSettlementSpent (lines 530-538); spent is not the amount selected for the
+settlement call.
 
-Command:
-  VITE_TEMPO_NETWORK=none pnpm test --run --project node \
+The client cap and server-required amount path can be inspected with:
+
+  git show 3f73a17eeba9522d90894099635a43d6d2934cf5:\
+src/tempo/session/client/Transports.ts | nl -ba | sed -n '409,445p'
+  git show 3f73a17eeba9522d90894099635a43d6d2934cf5:\
+src/tempo/session/client/Runtime.ts | nl -ba | \
+    sed -n '428,478p;514,556p'
+  git show 3f73a17eeba9522d90894099635a43d6d2934cf5:\
+src/tempo/session/client/SessionManager.ts | nl -ba | sed -n '164,178p'
+
+Result refreshed at 2026-08-25T12:52:13Z: the transport applies its local-limit
+check to the server's requiredCumulative, then uses that value for the next
+voucher; Runtime treats a null cap as uncapped and can derive automatic top-up
+from server-required headroom; SessionManager maps an omitted maxDeposit to a
+null cumulative cap.
+
+Relevant upstream regression tests were refreshed at the pinned mppx head with:
+
+  VITE_TEMPO_NETWORK=none corepack pnpm test --run --project node \
     Sse.test.ts Ws.test.ts \
-    -t "does not emit a charged value when the post-commit hook fails|closes without emitting a charged message when the post-commit hook fails"
+    -t 'does not emit a charged value when the post-commit hook fails|closes without emitting a charged message when the post-commit hook fails'
 
-Result:
-  2 tests passed.
+Result on 2026-08-25: 2 tests passed, 50 skipped. Those tests show a narrow
+pay-before-delivery window after a committed accounting update and failed
+post-commit delivery; they do not independently prove full-deposit capture.
 
-Interpretation:
-  Existing upstream tests assert that spent/units remain incremented after a
-  post-commit failure even though no application chunk/message is emitted. This
-  is the protocol's small pay-before-deliver fair-exchange window; C-010 can
-  amplify that window to the full authorization/deposit.
+RUST FRESH-CLONE REPRODUCTION
 
-RUST CLIENT POC
+Run from the root of this report repository:
 
-Command:
-  cargo test --features tempo,server,client \
-    poc_server_can_request_enforceable_voucher_for_full_deposit -- --nocapture
+  analysis_root="$(git rev-parse --show-toplevel)"
+  workdir="$(mktemp -d /tmp/tempo-c010-rust.XXXXXX)"
+  git clone https://github.com/tempoxyz/mpp-rs.git "$workdir/mpp-rs"
+  git -C "$workdir/mpp-rs" checkout --detach \
+    fadc88c044b9f8700b58d275bb659d403b231e07
+  git -C "$workdir/mpp-rs" apply --check \
+    "$analysis_root/evidence/repro/C-010-mpp-streaming-overcapture/full-deposit-voucher-poc.patch"
+  git -C "$workdir/mpp-rs" apply \
+    "$analysis_root/evidence/repro/C-010-mpp-streaming-overcapture/full-deposit-voucher-poc.patch"
+  cd "$workdir/mpp-rs"
+  cargo +1.97.0 test --features tempo,server,client \
+    poc_server_can_request_valid_voucher_for_full_deposit -- --nocapture
 
-Result:
+Result reproduced on 2026-08-25:
+
+  running 1 test
   test client::tempo::session::tests::
-    poc_server_can_request_enforceable_voucher_for_full_deposit ... ok
-  test result: ok. 1 passed; 0 failed; 1025 filtered out
+    poc_server_can_request_valid_voucher_for_full_deposit ... ok
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured;
+    1023 filtered out
 
 Test state:
-  per-unit challenge amount: 1,000
+
+  advertised per-unit challenge amount: 1,000
   prior cumulative authorization: 1,000
-  channel deposit and configured maximum: 10,000
-  server required cumulative: 10,000
-  returned cumulative: 10,000
+  locally modeled channel deposit and configured maximum: 10,000
+  server-required cumulative amount: 10,000
+  returned cumulative amount: 10,000
   independent EIP-712 signature verification: valid
 
-Material clean-tree source:
-  src/client/tempo/session/mod.rs:973-1055
-  src/client/tempo/session/mod.rs:1249-1308
-  src/client/tempo/session/mod.rs:1428-1461
-  examples/session/sse/src/client.rs:188-199
+The Rust fixture models local provider state as opened but does not create an
+on-chain channel. It proves that the client helper creates a cryptographically
+valid full-deposit voucher under that local state; it does not prove that this
+particular voucher was enforceable against a deployed channel.
 
-RUST UPSTREAM CLOSE VALIDATOR
+Review the pinned Rust client path with:
 
-Command:
-  cargo test --features tempo,server,client \
-    test_close_accepts_voucher_above_spent -- --nocapture
+  git show fadc88c044b9f8700b58d275bb659d403b231e07:\
+src/client/tempo/session/mod.rs | nl -ba | \
+    sed -n '973,1055p;1249,1308p;1428,1461p'
+  git show fadc88c044b9f8700b58d275bb659d403b231e07:\
+examples/session/sse/src/client.rs | nl -ba | sed -n '188,199p'
 
-Result:
-  test protocol::methods::tempo::session_method::tests::
-    test_close_accepts_voucher_above_spent ... ok
-  test result: ok. 1 passed; 0 failed; 1022 filtered out
+These ranges show the client-side server-required cumulative flow and the
+example configuration boundary exercised by the fixture.
 
-Upstream test state:
-  cumulative close amount: 5,000,000
-  recorded spent: 500
-  settled: 0
-  deposit: 10,000,000
+PINNED RUST FEATURE-SUITE BASELINE
 
-The clean-tree server passes the accepted cumulative amount unchanged to its
-escrow close call. A separate upstream test accepts the full deposit at zero
-spent. Canonical application-WebSocket close derives an exact-spent value and
-is safer; the streaming authorization jump remains common.
+The clean, detached mpp-rs revision was validated with:
 
-RUST UPSTREAM FEATURE BASELINE
+  cargo +1.97.0 test --quiet --features \
+    tempo,stripe,ws,server,client,axum,middleware,tower,utils,\
+integration-stripe,integration-ws
 
-Command:
-  cargo test --quiet --features \
-    tempo,stripe,ws,server,client,axum,middleware,tower,utils,integration-stripe,integration-ws
+Result completed at 2026-08-25T12:52:08Z:
 
-Result:
   1,160 library tests passed
   11 Stripe integration tests passed
   5 WebSocket integration tests passed
   61 doctests passed; 44 ignored
   0 failures
 
-TIP-1034 NATIVE ADDRESS / INTERFACE PASSIVE CHECK
+VOUCHER ENFORCEABILITY QUALIFICATION
 
-Read-only JSON-RPC batch against https://rpc.tempo.xyz:
-  eth_chainId: 0x1079 (4217)
-  eth_getCode(0x4D50500000000000000000000000000000000000): 0xef
-  CLOSE_GRACE_PERIOD(): 0x384 (900 seconds)
-  VOUCHER_TYPEHASH():
-    0x4730b4b2fe8de522475e80e010877c5b58ad10eb07fd0436615ee123f743bbe8
+A signed voucher is only potentially settleable when its channel was actually
+opened on chain, the voucher matches that channel and authorized signer, the
+channel remains active/nonfinalized, and the cumulative amount satisfies the
+escrow's deposit/prior-settlement checks. Finalization/deletion ends this
+enforceability. Neither local PoC submits an open or settlement transaction.
 
-Read-only JSON-RPC batch against https://rpc.moderato.tempo.xyz:
-  eth_chainId: 0xa5bf (42431)
-  eth_getCode(0x4D50500000000000000000000000000000000000): 0xef
-  CLOSE_GRACE_PERIOD(): 0x384 (900 seconds)
-  VOUCHER_TYPEHASH():
-    0x4730b4b2fe8de522475e80e010877c5b58ad10eb07fd0436615ee123f743bbe8
+At Tempo revision 18c174325061fa07ef577ef3fd59f5a7869bd556, inspect the
+settlement checks with:
 
-Offline check:
-  keccak256("Voucher(bytes32 channelId,uint96 cumulativeAmount)")
-  = 0x4730b4b2fe8de522475e80e010877c5b58ad10eb07fd0436615ee123f743bbe8
+  git clone https://github.com/tempoxyz/tempo.git /tmp/tempo-c010-source
+  git -C /tmp/tempo-c010-source checkout --detach \
+    18c174325061fa07ef577ef3fd59f5a7869bd556
+  git -C /tmp/tempo-c010-source show HEAD:\
+crates/precompiles/src/tip20_channel_reserve/mod.rs | nl -ba | sed -n '198,260p'
 
-These reads establish the native marker and expected callable constants, not
-deployed bytecode identity or equivalence with the reviewed source.
+The reviewed function receives channel/voucher data and checks cumulative
+authorization against channel state. It does not receive the HTTP quote,
+delivered units, application spent counter, request identity, or delivery
+proof. That source-to-deployment equivalence is not established by the passive
+interface reads below.
 
-Current source at tempo 18c1743, crates/precompiles/src/
-tip20_channel_reserve/mod.rs:198-260, verifies that settle checks the signed
-cumulative amount against deposit and prior settlement, then pays the delta. It
-does not receive price, consumed units, spent, request context, or delivery
-proof.
+PASSIVE DEPLOYED-INTERFACE REFRESH
+
+Read-only JSON-RPC commands executed at 2026-08-25T12:44:43Z:
+
+  payload='[{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]},{"jsonrpc":"2.0","id":2,"method":"eth_getCode","params":["0x4D50500000000000000000000000000000000000","latest"]},{"jsonrpc":"2.0","id":3,"method":"eth_call","params":[{"to":"0x4D50500000000000000000000000000000000000","data":"0x956c8327"},"latest"]},{"jsonrpc":"2.0","id":4,"method":"eth_call","params":[{"to":"0x4D50500000000000000000000000000000000000","data":"0x94739e87"},"latest"]}]'
+  curl -sS https://rpc.tempo.xyz -H 'content-type: application/json' \
+    --data "$payload"
+  curl -sS https://rpc.moderato.tempo.xyz -H 'content-type: application/json' \
+    --data "$payload"
+
+Selectors:
+
+  0x956c8327 = CLOSE_GRACE_PERIOD()
+  0x94739e87 = VOUCHER_TYPEHASH()
+
+Results:
+
+  rpc.tempo.xyz
+    eth_chainId: 0x1079 (4217)
+    eth_getCode(native address): 0xef
+    CLOSE_GRACE_PERIOD(): 0x384 (900)
+    VOUCHER_TYPEHASH():
+      0x4730b4b2fe8de522475e80e010877c5b58ad10eb07fd0436615ee123f743bbe8
+
+  rpc.moderato.tempo.xyz
+    eth_chainId: 0xa5bf (42431)
+    eth_getCode(native address): 0xef
+    CLOSE_GRACE_PERIOD(): 0x384 (900)
+    VOUCHER_TYPEHASH():
+      0x4730b4b2fe8de522475e80e010877c5b58ad10eb07fd0436615ee123f743bbe8
+
+These reads establish the native marker and callable constants at the stated
+time. They do not identify deployed bytecode or prove equivalence to the
+reviewed Tempo source.
+
+RELEASE-LEVEL SOURCE CHECK
+
+The server-required cumulative authorization path and high-water settlement
+argument were present in static source at mppx 0.8.15, 0.8.19, and the reviewed
+head. Re-run the exact source check in the mppx clone with:
+
+  for rev in \
+    ae3548dd3ec40e6b4a024fa72819d8411246025e \
+    e2e8e375db4bb0ba4d8686138a658d2132ace5b7 \
+    3f73a17eeba9522d90894099635a43d6d2934cf5
+  do
+    echo "REV=$rev"
+    git show "$rev":src/tempo/session/client/Transports.ts | \
+      rg -n 'requiredCumulative|assertVoucherWithinLocalLimit'
+    git show "$rev":src/tempo/session/server/Settlement.ts | \
+      rg -n 'highestVoucher|cumulativeAmount|spent'
+  done
+
+This source check was refreshed on 2026-08-25. The two committed TypeScript
+fixtures were executed at the reviewed head, not re-executed against both
+release commits; release runtime impact is therefore source-supported rather
+than separately runtime-confirmed.
+
+PUBLIC PRIOR ART AND COMMIT PROVENANCE
+
+Read-only GitHub API commands executed at 2026-08-25T12:52:22Z:
+
+  curl -sS https://api.github.com/repos/wevm/mppx/pulls/196 | \
+    jq '{number,state,merged_at,merge_commit_sha,title,html_url}'
+  curl -sS https://api.github.com/repos/wevm/mppx/pulls/510 | \
+    jq '{number,state,merged_at,merge_commit_sha,title,html_url}'
+
+Results:
+
+  PR 196
+    merged_at: 2026-03-18T04:17:59Z
+    merge commit: 2a0b88eb7290e621e6c875bbb44ab7fc3a9c8329
+    title: fix: cooperative close signs spent amount instead of high-water mark
+    URL: https://github.com/wevm/mppx/pull/196
+
+  PR 510
+    merged_at: 2026-06-09T14:31:56Z
+    merge commit: 6ae92c4e9417e8324740b8bdb883f8856ca84bf9
+    title: feat: add TIP-1034 tempo session
+    URL: https://github.com/wevm/mppx/pull/510
+
+PR 510 contains a public review comment that already identifies the raw
+server-controlled authorization boundary. Re-run its metadata/body fetch with:
+
+  curl -sS \
+    https://api.github.com/repos/wevm/mppx/pulls/comments/3377899233 | \
+    jq '{id,created_at,updated_at,path,line,html_url,body}'
+
+Result refreshed at 2026-08-25T12:52:31Z: comment 3377899233 was created
+2026-06-09T04:22:34Z on the session client path and warns that server-supplied
+cumulative fields plus an uncapped default can coerce voucher authorization up
+to channel deposit. URL:
+https://github.com/wevm/mppx/pull/510#discussion_r3377899233
+
+The candidate investigated here is the composition of that public client-side
+boundary with ordinary/scheduled high-water settlement after PR 196 corrected
+the cooperative-close path. Public history does not establish private awareness.
 
 AGENT INTEGRATION REACHABILITY
 
-At openclaw-mpp 4e30d56:
-  package.json and pnpm-lock.yaml resolve mppx 0.8.15.
-  src/mpp.ts:109-129 constructs tempo() without maxDeposit.
-  src/index.ts:121-170 drains mpp_fetch response streams.
-  src/setup.ts:23-45 defaults setup keys to USDC=10 for seven days.
+At openclaw-mpp 4e30d5677145c5e5c4aebd1c7a3d372f072db419, a source refresh at
+2026-08-25T12:45:16Z observed:
 
-The default key's total $10 authority is a practical bound. Larger custom
-policies increase it, and raw-private-key configuration does not inherit that
-setup cap. No agent, wallet, key, or live paid service was tested.
+  package.json:46 and the lockfile importer resolve mppx 0.8.15
+  src/mpp.ts:109-129 constructs tempo() without an explicit maxDeposit
+  src/index.ts:121-171 exposes mpp_fetch and drains response streams
+  src/setup.ts:23-44 defaults setup policy to USDC=10 for seven days
 
-SPECIFICATION AND PRIOR ART
+Re-run from a pinned clone with:
 
-mpp-specs draft-tempo-session-00.md at 6de3b4d:
-  93-108: claims exact incremental payment for resources received.
-  1223-1252: persists authorization before service.
-  1334-1383: records spend before delivery; idempotency is SHOULD-level.
-  1454-1497: allows settlement anytime; cooperative close must not capture more
-    than consumed and uses max(spent, settledOnChain).
-  1499-1510: forced close retains a 15-minute payee settlement window.
-  1626-1638: vouchers do not expire.
-  1717-1765: voucher does not bind request/session/resource context.
+  git clone https://github.com/tempoxyz/openclaw-mpp.git /tmp/openclaw-c010
+  git -C /tmp/openclaw-c010 checkout --detach \
+    4e30d5677145c5e5c4aebd1c7a3d372f072db419
+  git -C /tmp/openclaw-c010 show HEAD:package.json | rg -n 'mppx'
+  git -C /tmp/openclaw-c010 show HEAD:pnpm-lock.yaml | sed -n '15,35p'
+  git -C /tmp/openclaw-c010 show HEAD:src/mpp.ts | nl -ba | sed -n '109,129p'
+  git -C /tmp/openclaw-c010 show HEAD:src/index.ts | nl -ba | sed -n '121,171p'
+  git -C /tmp/openclaw-c010 show HEAD:src/setup.ts | nl -ba | sed -n '23,44p'
 
-Public prior art:
-  https://github.com/wevm/mppx/pull/196
-    Cooperative-close high-water overcharge fixed on 2026-03-18.
+The default policy bounds that setup path to USDC 10. Custom policies or raw
+key configuration may differ. No agent, wallet, key, or paid service was used.
 
-  https://github.com/wevm/mppx/pull/510
-  https://github.com/wevm/mppx/pull/510#discussion_r3377899233
-    Current TIP-1034 stack added on 2026-06-09; public review already warned
-    that server values could coerce authorization up to deposit.
+PINNED SPECIFICATION MODEL
 
-NOVELTY AND SAFETY STATEMENT
+At mpp-specs revision 6de3b4d5d13b4a80310bd80e021c02a4126428e2,
+run the following from a pinned clone:
 
-The server-controlled voucher boundary is public prior art. The candidate not
-found explicitly discussed in the reviewed public history is its composition
-with exported/scheduled settlement of the high-water voucher, despite the
-earlier exact-spend cooperative-close fix. Public silence is not evidence that
-Tempo is unaware.
+  git clone https://github.com/tempoxyz/mpp-specs.git /tmp/mpp-specs-c010
+  git -C /tmp/mpp-specs-c010 checkout --detach \
+    6de3b4d5d13b4a80310bd80e021c02a4126428e2
+  git -C /tmp/mpp-specs-c010 show HEAD:\
+specs/methods/tempo/draft-tempo-session-00.md | nl -ba | \
+    sed -n '93,108p;1223,1252p;1328,1383p;1454,1510p;1626,1638p;1717,1765p'
 
-No live payment, transaction, credential use, deceptive agent interaction,
-production mutation, load test, or unrelated third-party test was performed.
-Detailed PoC patches remain in the ignored findings directory.
+Source result refreshed at 2026-08-25T12:52:51Z:
+
+  lines 93-108: session payments are described as incremental and exact for
+    resources received
+  lines 1223-1252: voucher authorization is persisted before service
+  lines 1328-1383: available=acceptedCumulative-spent and spent must be
+    persisted before or atomically with delivery; retry idempotency is partly
+    SHOULD-level
+  lines 1454-1497: settlement may occur at any time, while cooperative close
+    must capture no more than consumption and uses max(spent,settledOnChain)
+  lines 1499-1510: a forced close leaves a grace interval for settlement, then
+    withdrawal returns remaining unsettled funds
+  lines 1626-1638: vouchers remain valid until the channel closes
+  lines 1717-1765: vouchers bind channel and cumulative amount but not an HTTP
+    session, API request, or specific resource
+
+This model supports the pay-before-delivery risk window and the active-channel
+finalization boundary. It also makes exact-spend cooperative close distinct
+from the ordinary/scheduled settle(highestVoucher) implementation observed
+above.
+
+LIMITATIONS AND SAFETY BOUNDARY
+
+- The PoCs compose two local behaviors; they do not perform one end-to-end
+  open, stream, settlement, or balance-change sequence on a chain.
+- The client PoC constructs but does not submit the channel-open transaction.
+  Its voucher is not enforceable without a matching active/nonfinalized channel.
+- The settlement PoC stubs every chain boundary. It proves the amount selected
+  by settle(), not acceptance or transfer by a deployed escrow.
+- The passive 0xef marker is not deployed-bytecode identity evidence.
+- mpp-rs does not commit Cargo.lock at the pinned revision, so Rust dependency
+  resolution can drift; the exact compiler and validation time above bound the
+  recorded execution.
+- Public source silence does not establish that Tempo is unaware of this issue.
+- No live payment, transaction, credential use, deceptive interaction,
+  production mutation, load test, or unrelated third-party test was performed.

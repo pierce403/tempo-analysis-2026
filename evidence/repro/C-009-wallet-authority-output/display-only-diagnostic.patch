@@ -1,0 +1,13 @@
+diff --git a/src/commands/identity.ts b/src/commands/identity.ts
+index 42258f7..81a0e5f 100644
+--- a/src/commands/identity.ts
++++ b/src/commands/identity.ts
+@@ -482,7 +482,7 @@ function currentKeyOutput(options: {
+         ? options.balance.formatted
+         : "0.000000",
+     spending_limit: {
+-      unlimited: false,
++      unlimited: limit === undefined,
+       limit: limit ? formatMicroUnits(cleanStoredScalar(limit.limit)) : "0.000000",
+       period_seconds: limit?.period ?? null,
+       remaining: null,

@@ -3,6 +3,40 @@ Observed: 2026-08-23T14:33:14Z
 Evidence type: freshly fetched public source plus local/dummy regression execution
 Safety: no GitHub write, workflow trigger, tag, PR, credential use, authorization, or production state change
 
+[Re-run command/procedure]
+
+From this assessment repository root, create disposable public clones and pin the three recorded
+August 23 heads. These commands perform only public Git reads and local tests:
+
+  freshness_dir="$(mktemp -d)"
+  git clone https://github.com/tempoxyz/tempo.git "$freshness_dir/tempo"
+  git clone https://github.com/tempoxyz/wallet-cli.git "$freshness_dir/wallet-cli"
+  git clone https://github.com/tempoxyz/wallet-rs.git "$freshness_dir/wallet-rs"
+  git -C "$freshness_dir/tempo" checkout d656ef5581505b59f1611b358e611f5a602d399e
+  git -C "$freshness_dir/wallet-cli" checkout 5a06c07a76c175667507724da4c0b4ac185df048
+  git -C "$freshness_dir/wallet-rs" checkout 7801e796b8239514d7d8544cc1c32bfe4795d810
+  git -C "$freshness_dir/tempo" merge-base --is-ancestor 86ff4deaebfee38bb0b000e648b2b367810265ff d656ef5581505b59f1611b358e611f5a602d399e
+  git -C "$freshness_dir/wallet-cli" merge-base --is-ancestor 677e52278eaafa4ec356ed9c750446fba320cdfa 5a06c07a76c175667507724da4c0b4ac185df048
+  git -C "$freshness_dir/wallet-rs" merge-base --is-ancestor 5245df47d3ada6a6eecf67342f03919d0123e8fc 7801e796b8239514d7d8544cc1c32bfe4795d810
+
+Resolve and compare the exact blobs supporting C-006 and C-008. Each `rev-parse` output should
+match the blob identifiers recorded below, and both `diff --quiet` commands should exit 0:
+
+  git -C "$freshness_dir/tempo" rev-parse d656ef5581505b59f1611b358e611f5a602d399e:.github/workflows/docker.yml d656ef5581505b59f1611b358e611f5a602d399e:.github/workflows/release.yml d656ef5581505b59f1611b358e611f5a602d399e:.github/sts/release-pr.sts.yaml
+  git -C "$freshness_dir/tempo" diff --quiet 86ff4deaebfee38bb0b000e648b2b367810265ff:.github/workflows/docker.yml d656ef5581505b59f1611b358e611f5a602d399e:.github/workflows/docker.yml
+  git -C "$freshness_dir/wallet-cli" rev-parse 5a06c07a76c175667507724da4c0b4ac185df048:.github/workflows/changelog-generate.yml 5a06c07a76c175667507724da4c0b4ac185df048:.github/sts/release.sts.yaml 5a06c07a76c175667507724da4c0b4ac185df048:.github/workflows/build.yml
+  git -C "$freshness_dir/wallet-cli" diff --quiet 677e52278eaafa4ec356ed9c750446fba320cdfa:.github/workflows/build.yml 5a06c07a76c175667507724da4c0b4ac185df048:.github/workflows/build.yml
+
+Resolve the source blobs supporting C-009 and then run the committed focused reproduction. The
+`rev-parse` outputs should match the wallet-cli and Tempo blob identifiers recorded below:
+
+  git -C "$freshness_dir/wallet-cli" rev-parse 5a06c07a76c175667507724da4c0b4ac185df048:src/provider.ts 5a06c07a76c175667507724da4c0b4ac185df048:src/wallet/store.ts 5a06c07a76c175667507724da4c0b4ac185df048:src/commands/identity.ts
+  git -C "$freshness_dir/tempo" rev-parse d656ef5581505b59f1611b358e611f5a602d399e:crates/primitives/src/transaction/key_authorization.rs d656ef5581505b59f1611b358e611f5a602d399e:crates/revm/src/handler.rs d656ef5581505b59f1611b358e611f5a602d399e:crates/precompiles/src/account_keychain/mod.rs
+  bash evidence/repro/C-009-wallet-authority-output/repro.sh "$freshness_dir/wallet-cli"
+
+The final command uses pinned pnpm 11.0.8 and may need ordinary registry access. Remove the
+disposable directory after review. No command validates a credential or changes GitHub state.
+
 [Purpose]
 
 The three affected default branches advanced after the 2026-08-21 finding snapshots. This
