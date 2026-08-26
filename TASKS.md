@@ -47,6 +47,16 @@ None.
 
 ## Complete
 
+### T-014 — Plan authorization-gated C-010 live validation
+
+- **State**: complete
+- **Outcome**: Added a testnet-first live-validation plan for C-010 that separates controlled harness, owner staging, and production-canary gates; defines funding, authorization, evidence, verdict, cleanup, and stop conditions; and classifies mpp.ninja surfaces as unapproved review candidates rather than vulnerable targets.
+- **Evidence required**:
+  - [x] The plan requires written, action-specific authorization before signing, funding, channel mutation, settlement, or production interaction.
+  - [x] The preferred scenario uses disposable keys and faucet-funded Moderato assets with explicit economic variables and a signature-only stopping gate.
+  - [x] Potential targets distinguish controlled test infrastructure from third-party candidates and record applicability gaps.
+  - [x] No active request, credential, payment, channel transaction, settlement, owner contact, or production mutation was performed.
+
 ### T-013 — Enforce report claim-to-evidence traceability
 
 - **State**: complete
