@@ -29,3 +29,7 @@ python3 scripts/verify_report_evidence.py --require-tracked
 The checker emits source line numbers for missing claim links, broken or
 untracked targets, and incomplete narrative evidence artifacts. It exits
 nonzero until every requirement is satisfied.
+
+## Additional task evidence
+
+- [`2026-08-27-T-015-security-engineering-review.txt`](2026-08-27-T-015-security-engineering-review.txt) pins the reviewed public security-engineering changes, records local checker/DEX/invariant/tooling results, and separates current-main reach from open or closed-unmerged work.

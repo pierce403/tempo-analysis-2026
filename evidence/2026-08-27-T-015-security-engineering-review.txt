@@ -1,0 +1,505 @@
+T-015 reproducible evidence: adversarial review of recent public security-engineering work
+Observation date: 2026-08-27 America/Los_Angeles
+Evidence recorded: 2026-08-28T01:47:26Z
+Fresh-clone reproduction script validated: 2026-08-28T01:57:44Z
+Mode: public GitHub metadata and source inspection plus local dummy/unit tests only
+
+TIMESTAMP / PROVENANCE
+
+Analysis repository starting revision:
+  96d2325e7ff39acba52be74e6e404bbce4592a17
+
+Pinned upstream default branches at observation time:
+  tempoxyz/zones:
+    016e4c30530f943d6714e895ce0a34e22b01b9c1
+  tempoxyz/tempo:
+    4933384d3701802f91ee86ebb3f05ac0ad60d412
+  tempoxyz/mpp-rs:
+    965692a8a5457896b22698a177a371875b73cfc5
+  tempoxyz/accounts:
+    fc57134244ccf1329724ea87da938db8dabe0abc
+  tempoxyz/scfuzzbench:
+    34c26d937e793608aefd3a708eed65878eed108e
+  Tempo revision pinned by Zones:
+    9f7fc9295ea3fa3b49ec2b0a9e524a8b2cb202b1
+
+Tracked reproduction assets:
+  evidence/repro/T-015-security-engineering-review/repro.sh
+  evidence/repro/T-015-security-engineering-review/zone-checker-unproven-custody.patch
+  evidence/repro/T-015-security-engineering-review/zone-checker-omitted-account.patch
+
+The public pull-request APIs and exact Git objects were observed on 2026-08-27.
+Mutable state must be refreshed before describing any item as current.
+
+0xalpharush / Zones and Tempo reach snapshot:
+
+  zones #1303 OPEN, head 21e4a0f5c4f758555549bdea88c92b458011d64f,
+    not on main; Nitro bootstrap hardening stacked on merged #1301.
+    https://github.com/tempoxyz/zones/pull/1303
+  zones #1301 MERGED, merge 6d0fed25ef34bac88cd235909229d2d69f4c11a8,
+    on main; kernel 6.6.79 update.
+    https://github.com/tempoxyz/zones/pull/1301
+  zones #1155 CLOSED-UNMERGED, head
+    159285dc0e1db1f2bdedff134f122ea01fa0d01d; exact anchor timestamps.
+    Exact equality later landed through #1165 and was deliberately relaxed to
+    at-or-after through #1202.
+    https://github.com/tempoxyz/zones/pull/1155
+  zones #1108 OPEN, head 8a4d9bb52cbc1a528d63983c74d08fd447b278c3,
+    not on main; its command-line key form is stale relative to current
+    environment/file-backed rotation.
+    https://github.com/tempoxyz/zones/pull/1108
+  zones #1114 CLOSED-UNMERGED, head
+    599fb97684bcace83cdffe63af8844f285dc0e4a; pause and rotation tooling landed
+    separately through #1134, #1157, and #1180.
+    https://github.com/tempoxyz/zones/pull/1114
+  zones #822 CLOSED-UNMERGED, head
+    51a539964988c29f2a1666e9346e6888ed794ae4; the full immutable BatchPlan did
+    not land. Narrower snapshot/binding pieces landed through #821 and #823.
+    https://github.com/tempoxyz/zones/pull/822
+  zones #720 CLOSED-UNMERGED, head
+    f4fbb21bdada042268d87c344cb52452298d731c; no enforce-on-submit solvency
+    gate from this branch is on main.
+    https://github.com/tempoxyz/zones/pull/720
+  zones #756 CLOSED-UNMERGED, head
+    77f3fbac1e8be1e818c50cf96535af1b82a555e7; its recovery receipt-proof path
+    did not land.
+    https://github.com/tempoxyz/zones/pull/756
+  zones #797 OPEN draft, head
+    28df0fc4c53fee8886a4d78ba8c441890282372d, not on main; zone-backed
+    withdrawal enforcement remains proposed.
+    https://github.com/tempoxyz/zones/pull/797
+  zones #775 CLOSED-UNMERGED draft, head
+    bef91d38d269e5fd19de01be8e3dccf8cf7f27ba; its expected-red stale-payload
+    test did not model the committed transaction path and did not land.
+    https://github.com/tempoxyz/zones/pull/775
+  zones #749, #810, and #807 MERGED; their current-main merge commits are
+    199ff70fb80e2d91cdad58e6f395ab0ef6d702fa,
+    da3c3cde1becfd129335c0e243dcfc37bb2a2e27, and
+    79f8a04183b84be7abbe35f7e4fd05bee49e148c respectively.
+  tempo #7171 and #7175 MERGED and are on current main through
+    4953f9b9984bf28139bcb99c10eb49cebe75cf73 and
+    15807ed35538913206cd619c1a1231ab9d3cdd70.
+    https://github.com/tempoxyz/tempo/pull/7171
+    https://github.com/tempoxyz/tempo/pull/7175
+
+horsefacts public activity snapshot:
+
+  GitHub search returned 22 horsefacts-authored tempoxyz pull requests created
+  in 2026: 20 Tempo PRs created February 10-15, mpp-rs #188 on April 2, and
+  accounts #184 on April 10. The query returned no later authored PR. This
+  supports a historical public work cluster, not a claim about a private or
+  current August assignment.
+
+  Merged Tempo PRs still ancestral to observed main:
+    #2595 2045944f390fa96f695e59063fdfc4cfd297e93f
+    #2599 7bce3f024fd81df610f820512616bf3e4c552428
+    #2629 70b93adb62a2698ddb56be12f4c06a7c9228511d
+    #2655 2becb90736a550a6354f6b5dde3dc41f8c20de9a
+    #2657 e3d25e81609b85c7b8d689a45837f7a9577e4f64
+    #2659 8906cf1a1c540624f6c3b55b07192ca533ba6d4c
+    #2660 fd99e76bafdb0cd1421f10934ee63406bb2513a7
+    #2661 3ef1713e60f573a4ca42bdb170c0037e76301e56
+    #2691 be10e2833ed315d2885d4df336589a2f8c500740
+    #2692 869f8e12a33fed7a5f55cef645adbc8a26383da1
+    #2693 dec8ca5faa17bc59038e6f0f3e4f3da5533ead94
+    #2695 afb0778ffcafea6a61dff8cf13ce0f4d8bec654f
+
+  Closed-unmerged Tempo PR heads:
+    #2594 52e84e3bf7fb94f94c6551929abd94ac3cefa314
+    #2596 732b34b355bdb3d906a490a9d688959a9a1b16eb
+    #2600 f929a6a798402c03c60661977b2dd9fd3c79174b
+    #2604 f75cc89cad3c185e5bb243f47b5be392d8f0dd99
+    #2658 84f67bf5b6acb89635862f475b8333fc7d10bbf9
+    #2662 7f2f59efc6663cb3af80d648769326c78f917fe8
+    #2704 18edcef3688725aadc5f8c2ea1456ca920671655
+    #2706 58513988cb55bdb3d906a490a9d688959a9a1b16eb
+
+  #2604 was not merged. Merged #2659 is the operative reserves-plus-fees
+  invariant. All 12 merged Tempo items above modify tests/spec verification,
+  not production execution.
+
+  mpp-rs #188 merged as
+  2f46c5039b20bc516ae06e456f15197da3225e02 and released in v0.8.4 at
+  dfea6bbdedd50b0a979e1a2bae71c10dd470acb0. The fix is ancestral to current
+  main and later v0.11.0/v0.12.0 tags.
+  https://github.com/tempoxyz/mpp-rs/pull/188
+
+grandizzy reach snapshot:
+
+  zones #1216 MERGED as be8476305b2fd5851ab19ff07231404f66f4c608
+    and is on main; observe-only checker.
+    https://github.com/tempoxyz/zones/pull/1216
+  zones #1289 OPEN at 8c492eb7b8800866ec0d64f43a6abebaa909408a,
+    not on main; checker runtime isolation/recovery hardening.
+    https://github.com/tempoxyz/zones/pull/1289
+  zones #546 MERGED as 6fcc7434b9547502cb9493012c4855401af2b96d;
+    #557 head d76e32ccec12dab82f980c0c7311b8835c2f8fbb and #887 head
+    1ce8e3377b8441009cabe63887ac618680ae9e39 were closed-unmerged.
+  tempo #6614 OPEN at 692244e0e3c4f5a499fa349ebedb1118c54d6fe3
+    and #6700 OPEN at 66c30ee1e048b465babed46ba8790835998df9fc;
+    neither is on main.
+    https://github.com/tempoxyz/tempo/pull/6614
+  tempo #6804 MERGED as 785f6e94cad7b09a57025d77a33875fe531288b6
+    and is on main.
+  accounts #747 OPEN at 1d58599b78194aff4fc6ffac62d4264b640d0000,
+    not on main.
+    https://github.com/tempoxyz/accounts/pull/747
+  scfuzzbench #35 OPEN at 3369c75515b5dd9523d30b991fea1538c0b9d66a,
+    not on main.
+    https://github.com/tempoxyz/scfuzzbench/pull/35
+
+RE-RUN COMMAND / BOUNDED PROCEDURE
+
+Refresh one pull request and default-branch pin without changing external state:
+
+  metadata_clone="$(mktemp -d /tmp/tempo-t015-metadata.XXXXXX)"
+  git clone --filter=blob:none https://github.com/tempoxyz/zones.git "$metadata_clone"
+  gh api repos/tempoxyz/zones/pulls/1289 \
+    --jq '{number,state,draft,head:.head.sha,base:.base.sha,merged_at,merge_commit_sha,updated_at}'
+  git -C "$metadata_clone" fetch origin main
+  git -C "$metadata_clone" rev-parse origin/main
+  git -C "$metadata_clone" fetch origin pull/1289/head
+  if git -C "$metadata_clone" merge-base --is-ancestor \
+    8c492eb7b8800866ec0d64f43a6abebaa909408a origin/main; then
+    echo 'unexpected: open PR head is on main'
+    false
+  else
+    test "$?" -eq 1
+  fi
+  rm -rf -- "$metadata_clone"
+
+Refresh the complete 2026 horsefacts query:
+
+  gh api 'search/issues?q=org%3Atempoxyz%20author%3Ahorsefacts%20type%3Apr%20created%3A2026-01-01..2026-12-31&sort=created&order=asc&per_page=100'
+
+Reproduce both checker observations from this report root. The tracked script
+creates two disposable clones, checks out current main and the exact #1289 head,
+applies both tracked patches, discovers the compiler include directory, runs the
+three focused tests, and removes only its mktemp-created directory:
+
+  ./evidence/repro/T-015-security-engineering-review/repro.sh
+
+Include both complete patched checker library suites:
+
+  RUN_FULL=1 ./evidence/repro/T-015-security-engineering-review/repro.sh
+
+The script requires Git, GCC, Rust 1.95.0, and network access to the public
+GitHub repository. It makes no RPC or chain request.
+
+Re-run the pinned Zones timestamp test from a disposable clone detached at
+016e4c30530f943d6714e895ce0a34e22b01b9c1 after initializing its submodules.
+The command executed in this investigation was:
+
+  cd /home/pierce/projects/tempo-analysis-2026/target/t015/alpharush/zones
+  env \
+    RUSTC=/home/pierce/.rustup/toolchains/nightly-2026-07-17-x86_64-unknown-linux-gnu/bin/rustc \
+    RUSTDOC=/home/pierce/.rustup/toolchains/nightly-2026-07-17-x86_64-unknown-linux-gnu/bin/rustdoc \
+    CARGO_TARGET_DIR=/home/pierce/projects/tempo-analysis-2026/target/t015/alpharush/build \
+    /home/pierce/.rustup/toolchains/nightly-2026-07-17-x86_64-unknown-linux-gnu/bin/cargo \
+    test -p zone-precompiles \
+    tempo_state::tests::finalize_tempo_accepts_zone_timestamp_after_anchor \
+    -- --exact --nocapture
+
+Re-run the placeholder verifier check from `crates/contracts` in that same
+pinned Zones checkout:
+
+  cd /home/pierce/projects/tempo-analysis-2026/target/t015/alpharush/zones/crates/contracts
+  /home/pierce/.foundry/bin/forge test --match-contract VerifierTest \
+    --match-test test_verify_returnsTrue -vv
+
+Re-run #2659's historical FeeAMM invariant from a clone detached at
+8906cf1a1c540624f6c3b55b07192ca533ba6d4c with initialized submodules. The
+exact local command used the Tempo-patched Forge built for this analysis:
+
+  cd /home/pierce/projects/tempo-analysis-2026/target/t015/horsefacts/tempo-pr2659/tips/ref-impls
+  FOUNDRY_PROFILE=ci /home/pierce/projects/tempo-analysis-2026/target/foundry-tempo/target/release/forge test \
+    --match-contract FeeAMMInvariantTest -vv
+
+Inspect current horsefacts-adjacent assurance gaps from any Tempo clone that
+contains the pinned object 4933384d3701802f91ee86ebb3f05ac0ad60d412:
+
+  tempo_inspect="$(mktemp -d /tmp/tempo-t015-source.XXXXXX)"
+  git clone --filter=blob:none https://github.com/tempoxyz/tempo.git "$tempo_inspect"
+  git -C "$tempo_inspect" fetch origin \
+    4933384d3701802f91ee86ebb3f05ac0ad60d412
+  git -C "$tempo_inspect" show \
+    4933384d3701802f91ee86ebb3f05ac0ad60d412:tips/verify/test/invariants/BlockGasLimits.t.sol \
+    | nl -ba | sed -n '100,190p'
+  git -C "$tempo_inspect" grep -n ghost_txOverCapRejected \
+    4933384d3701802f91ee86ebb3f05ac0ad60d412 -- tips/verify
+  git -C "$tempo_inspect" show \
+    4933384d3701802f91ee86ebb3f05ac0ad60d412:tips/verify/test/invariants/StablecoinDEX.t.sol \
+    | nl -ba | sed -n '920,1010p'
+
+Re-run #6614's focused quote/execution parity suite from a Tempo checkout
+detached at 692244e0e3c4f5a499fa349ebedb1118c54d6fe3:
+
+  cd /home/pierce/projects/tempo-analysis-2026/target/t015/grandizzy/tempo/pr6614-head
+  BINDGEN_EXTRA_CLANG_ARGS="-I/usr/lib/gcc/x86_64-linux-gnu/15/include" \
+    cargo +1.95.0 test -p tempo-precompiles --features test-utils \
+    test_quote_matches_swap_t11 -- --nocapture
+
+Inspect the current FeeAMM boundary handler:
+
+  git -C "$tempo_inspect" show \
+    4933384d3701802f91ee86ebb3f05ac0ad60d412:tips/verify/test/invariants/FeeAMM.t.sol \
+    | nl -ba | sed -n '880,935p'
+  rm -rf -- "$tempo_inspect"
+
+Re-run the bounded scfuzzbench timeout model from a checkout detached at
+34c26d937e793608aefd3a708eed65878eed108e:
+
+  cd /home/pierce/projects/tempo-analysis-2026/target/t015/grandizzy/scfuzzbench/main
+  bash -c 'source fuzzers/_shared/common.sh; append_runner_command_log(){ :; }; log_duration(){ :; }; log(){ printf "%s\\n" "$*"; }; export SCFUZZBENCH_TIMEOUT_SECONDS=1; run_with_timeout /tmp/scfuzzbench-timeout-probe.log bash -c "sleep 2"; printf "returned=%s\\n" "$?"'
+
+Re-run selected scfuzzbench regressions:
+
+  python3 -m unittest analysis.tests.test_foundry_run_showmap_args
+  uv run --with-requirements analysis/requirements.txt python -m unittest \
+    analysis.tests.test_matrix_identity \
+    analysis.tests.test_foundry_parser \
+    analysis.tests.test_diffcov
+
+Accounts #747 bounded validation ran from
+`/home/pierce/projects/tempo-analysis-2026/target/t015/grandizzy/accounts/pr747-head`
+detached at 1d58599b78194aff4fc6ffac62d4264b640d0000 with installed dependencies:
+
+  cd /home/pierce/projects/tempo-analysis-2026/target/t015/grandizzy/accounts/pr747-head
+  timeout 30s node_modules/.bin/vp test src/core/Store.test.ts \
+    --run --pool=threads --maxWorkers=1 --reporter=verbose
+  timeout 45s node_modules/.bin/vp test src/cli/storage.test.ts \
+    --run --pool=threads --maxWorkers=1 --reporter=verbose
+  timeout 30s node_modules/.bin/vp test src/cli/storage.test.ts \
+    --run --pool=threads --maxWorkers=1 --reporter=verbose \
+    --testNamePattern='does not restore|retires credentials|preserves a store'
+
+CAPTURED RESULTS
+
+1. RPC-trusted Portal custody observation
+
+  Current Zones main and #1289 authenticate header hashes and receipt roots,
+  but ValidatedRpcHeader does not retain stateRoot. portal_balance calls the
+  TIP-20 balanceOf method through eth_call at BlockId::hash_canonical. The
+  canonical flag constrains an honest RPC server; the checker does not verify a
+  returned storage/account proof against the authenticated header.
+
+  The committed mock patch queues one arbitrary ABI-encoded U256 response and
+  no header, receipt, account proof, or storage proof. The real portal_balance
+  helper returns that value and consumes the one response.
+
+  Current-main focused result:
+    1 passed; 0 failed; 59 filtered out
+  Current-main complete patched checker library result:
+    60 passed; 0 failed
+  #1289 focused result:
+    1 passed; 0 failed; 76 filtered out
+  #1289 complete patched checker library result:
+    77 passed; 0 failed
+
+  The tracked fresh-clone script subsequently completed with all three focused
+  checks passing: current-main custody observation 1/1, #1289 custody
+  observation 1/1, and #1289 omitted-account witness 1/1. Its temporary
+  directory cleanup completed on exit.
+
+  #1289 runtime code passes the returned value into the custody comparison and
+  persists a verified transition when available >= derived liabilities. A
+  falsely high RPC value can therefore suppress the auxiliary insolvency
+  signal; a falsely low value can create a durable false divergence.
+
+  The README explicitly makes Tempo consensus and execution trust boundaries
+  and says the checker does not re-execute Tempo. Observe mode cannot affect
+  execution or consensus. Classification is therefore Informational/Low:
+  RPC-trusted custody observation / monitoring-integrity dependency, not a
+  protocol or funds vulnerability under the stated model.
+
+  Public prior art is adjacent: review comment r3846435907 on #1216 says a
+  shared RPC compromise can forge headers for both the node and checker, and
+  reply r3850112481 says the checker would be extended in a follow-up. No
+  reviewed public comment specifically identified the unproved custody
+  eth_call.
+  https://github.com/tempoxyz/zones/pull/1216#discussion_r3846435907
+  https://github.com/tempoxyz/zones/pull/1216#discussion_r3850112481
+
+2. Omitted-account checker coverage
+
+  The checker reads supply for every enabled token but reads account balances
+  only for accounts named by decoded Transfer logs. The focused accounting
+  witness starts with a derived Alice balance of 10, presents the same total
+  supply with no candidate account balances, and is accepted:
+    1 passed; 0 failed
+
+  This proves the documented coverage limitation, not a normal user exploit.
+  A material miss requires a balance-changing execution defect or malicious
+  transition that conserves supply while omitting canonical Transfer logs.
+  Ordinary modeled TIP-20 transitions name changed accounts.
+
+3. Zones settlement, privilege, solvency, incident response, and time
+
+  Current replication authenticates receipt roots and exact anchors. Settlement
+  certificates bind zone, sequencer set, height, withdrawal index, verifier,
+  Tempo/anchor hashes, transitions, and configuration. The full #822 BatchPlan
+  and #720/#797 enforce-on-submit solvency gates are not current-main behavior.
+  Current solvency coverage is manual fixed-snapshot accounting plus the
+  observe-only checker.
+
+  Tempo #7171/#7175 typed role/capability changes reach current Tempo and the
+  Zones-pinned Tempo revision. Current pause and rotation tooling landed through
+  successor work even though #1114 did not. submitBatch intentionally remains
+  available while paused and the current verifier is an always-true prototype,
+  but threshold signatures still bind transitions and withdrawals remain
+  stopped; this is a known conditional architecture risk, not a novel finding.
+
+  Timestamp result:
+    finalize_tempo_accepts_zone_timestamp_after_anchor ... ok
+    1 passed; 0 failed; 146 filtered out
+  Current code intentionally requires zone timestamp >= authenticated Tempo
+  anchor. #1155's exact equality is not current behavior. Pinned Tempo consensus
+  still applies parent monotonicity and future-drift checks.
+
+  Placeholder verifier result:
+    test_verify_returnsTrue ... PASS
+    1 passed; 0 failed
+  This confirms the documented stub only; it does not test proof soundness.
+
+  The fuller pause test compiled but failed during setUp with
+  MissingPrecompile("AccountKeychain", 0xaAAA...). No pause assertion result is
+  inferred.
+
+  A separate current-main source review found settlement restart recovery still
+  queries provider-supplied BatchSubmitted logs without the receipt-proof path
+  proposed in closed #756. Local block/hash, queue, and revert reconciliation
+  constrain the credible result to startup/resync availability under a
+  Byzantine RPC, and the supported design assumes a certified follower. No
+  theft candidate was retained.
+
+  A source-only prover connection-lifecycle candidate remains unresolved. The
+  bounded localhost/Nitro exposure test was not run, so it is recorded as a
+  private availability-hardening question rather than a deployed finding.
+
+4. horsefacts invariant and MPP review
+
+  #2659 exact-merge FeeAMM result:
+    PASS, 10 runs, 500 calls, zero reverts
+    simulateFeeCollection: 67 calls, 11 discards
+  The operative invariant sums reserves and collected fees together across the
+  bounded harness token/actor universe. No omission or double count was found.
+
+  #2661 split revoked-key and expired-key violation counters. The old shared
+  counter was monotonic and asserted equal to zero, so either failure already
+  failed the suite. The split improves attribution; it does not stop one failure
+  from mathematically hiding another. Current checks still lack a positive
+  revoked/expired attempt or classified-rejection reach gate.
+
+  #2599's current gas-cap harness increments ghost_txOverCapRejected only for
+  the expected cap error, but the invariant asserts only that the success
+  violation counter remains zero. The classified rejection counter is not used
+  in a pass predicate. An over-cap attempt that always reverts for another
+  reason can therefore leave the invariant green. This is a confirmed
+  test-assurance gap, not a protocol vulnerability.
+
+  #2595 fixed its permanent DEX6 disable by scanning for live orders, but DEX6
+  still skips balance assertions whenever the actor has any active order, and
+  DEX7 quote assertions remain commented. These are explicit coverage gaps,
+  not proof of DEX defects.
+
+  A historical combined February run passed TIP403, BlockGasLimits, and
+  StablecoinDEX at 10 runs x 50 calls, then TempoTransactionInvariant shrank a
+  nonce mismatch to handler_gasTrackingKeyAuth. Current commit
+  c9575466ce610c499fd9b8edfa662338d328a580 (#6298) fixes that exact direct-key
+  setup path. The old failure is retained as a resolved historical negative,
+  not a current candidate. Current runtime revalidation was blocked because the
+  available Tempo Forge did not recognize hardfork T10.
+
+  mpp-rs #188 covers exactly the four action variants present at its merge:
+  Open, TopUp, Voucher, and Close. Central dispatch supplies HMAC-bound expected
+  payee and token to each path; no fifth or unbound action was found. This was a
+  real production verifier fix, but package inclusion does not prove deployed
+  consumer adoption. A focused all-features historical Cargo build reached 243
+  dependency/API compile errors because its unlocked dependency graph resolved
+  newer Alloy versions; no test result is inferred from that build failure.
+
+5. grandizzy DEX, FeeAMM, fuzzing, and accounts review
+
+  Tempo #6614 branch result:
+    9 matching tests passed; 0 failed
+    includes a 500-case fragmented-order-books property test
+  Quote and execution use the same T11 order walk and per-order step functions.
+  No independent T11 rounding path or adjacent correctness candidate was found.
+  The branch remains open and is not current-main behavior.
+
+  Current FeeAMM invariant handler lines 903-929 accept the boundary mint
+  succeeding even though the comment requires failure; the just-above-boundary
+  call may also revert with any broadly recognized error even though the comment
+  requires success. _totalMints is not asserted. This is a high-confidence test
+  oracle defect, not a FeeAMM implementation defect; direct Rust/unit coverage
+  exercises the correct boundary in the current implementation.
+
+  scfuzzbench current main caps Foundry showmap replay at 1,800 seconds. The
+  generic timeout wrapper maps exit 124 to success and the caller uploads the
+  result. The one-second local dummy probe printed "treating as completed run"
+  and returned 0. #35 scales the timeout with fuzz budget but remains open and
+  still uses the timeout-as-success wrapper. Classification: benchmark validity
+  issue, not a target-protocol security finding.
+
+  Selected scfuzzbench results:
+    5 Foundry showmap-argument tests passed
+    52 matrix/parser/differential-coverage tests passed
+
+  Accounts #747 results:
+    20/20 core Store tests passed
+    7 storage tests passed before the first storage run hung at the
+      cross-process contention case and its 45-second outer timeout exited 124
+    4 additional distinct storage tests passed in a name-filtered second run
+    aggregate storage disposition: 11 distinct passed, one uncompleted; this
+      was not a clean 11/12 suite run
+    direct Koffi flock/unlock probe returned lock=0 and unlock=0
+  No merge/retirement semantic failure was observed. Remaining limitations are
+  advisory participating-writer locks, no parent-directory fsync after rename,
+  and an uncompleted target-specific native-addon release smoke test. The PR is
+  open and is not yet a shipped end-to-end fix.
+
+  Zones #1289 improves Finish gating, canonical linear replay, append-only
+  reorg/revert findings, and disabled-drain behavior, but remains open. A public
+  post-head review comment (discussion_r3871226731) says fail-fast concurrent
+  RPC batches can abandon already-dispatched WebSocket requests that Alloy may
+  later replay. This was not locally reproduced and remains an open review item.
+
+6. Overall disposition
+
+  No new theft-relevant protocol vulnerability was validated in this pass.
+  The strongest concrete new result is an Informational/Low qualification of
+  the observe-only checker's independence: Portal custody is RPC-trusted rather
+  than state-proof authenticated. The strongest assurance findings are the
+  gas-cap and FeeAMM test-oracle gaps and scfuzzbench's timeout-as-success path.
+  The DEX #6614 parity design survived focused adversarial testing, #2659's
+  combined obligation check exercised its intended path, and mpp-rs #188 bound
+  every action present at its merge.
+
+LIMITATIONS / SAFETY
+
+- No production transaction, payment, authentication attempt, credential use,
+  load test, employee contact, disclosure, issue, pull request, or third-party
+  state change was performed.
+- All executed protocol checks used public source and local dummy, mocked, or
+  invariant state. No test was pointed at a live Tempo or Zone endpoint.
+- Pull-request state, branches, and default-branch revisions are mutable and
+  reflect only the observation date above.
+- Source ancestry proves code reach in a repository, not deployment, release
+  adoption, operator configuration, asset value, or production exposure.
+- Observe mode cannot change consensus. A forged RPC custody value affects its
+  monitoring signal, not Portal custody or Zone execution.
+- The checker observation is within a publicly documented trust boundary and
+  has adjacent public review prior art. Novelty and owner intent are unknown.
+- The omitted-account witness requires an unmodeled balance change without a
+  canonical Transfer log; no ordinary user path producing that condition was
+  found.
+- Historical test/build failures were separated from product failures. The
+  AccountKeychain harness failure, historical Alloy dependency drift, T10 Forge
+  limitation, and one hanging cross-process test are not green or red product
+  results.
+- The source-only prover availability question was not exercised even locally;
+  deployment routing, authentication, Nitro behavior, and impact remain unknown.
+- A strong checker mitigation would retain authenticated stateRoot and verify a
+  TIP-20 account/storage proof locally. A trusted local Tempo node or provider
+  quorum is useful defense in depth, but is not equivalent to a cryptographic
+  state proof.

@@ -1,6 +1,6 @@
 # Findings Register
 
-Last updated: **2026-08-24 18:18 UTC** \
+Last updated: **2026-08-28 01:47 UTC** \
 Visibility: tracked, redacted index; detailed candidate reports remain ignored under `findings/`
 
 ## Purpose and handling
@@ -34,6 +34,7 @@ No external disclosure, GitHub issue, PR, workflow trigger, credential test, clo
 | C-001 | P2 | Historical `auth.tempo.xyz` deployment anomaly | Live historical observation; functional site restored in the August 23 check | A hostile controller of a trusted auth origin could solicit deceptive wallet authorization | Confirm Vercel/DNS ownership and audit history |
 | C-007 | P3 | `tempo-std` authorization RLP mismatch | Locally reproduced correctness issue | Expected rejection/DoS or integration failure, not an authorization bypass | Identify a production consumer and add cross-language vectors |
 | OBS-002 | P2 investigation | Grafana credential-shaped value in public Tempo branch | Public non-default branch head confirmed; validity/scope untested | Could expose or poison profiling telemetry and weaken detection; no direct fund authority established | Revoke/rotate owner-side, inspect scope and audit logs, remove from public refs |
+| OBS-003 | Low / Informational | Zone checker custody is RPC-trusted | Mock-locally confirmed at current source and open #1289; deployment configuration unknown | A compromised trusted RPC could suppress or fabricate the auxiliary solvency signal, not alter funds or consensus | Confirm intended RPC-fault model; authenticate custody against the header state root if required |
 | OBS-001 | Known observation | Removed `changelogs/bot/.env` | Absent from default branch but present at 18 non-default branch heads; public PR says not live | A still-valid repository credential could enable source or automation abuse; no validity or scope established | Confirm revocation and audit the public-exposure interval internally |
 
 ## Systemic pattern: unreviewed code and privileged CI
@@ -465,6 +466,31 @@ If still valid, a criminal could exercise whatever profiling authority it grants
 
 Tempo should revoke or rotate the credential without testing the public value, inspect Grafana access-policy scope and audit logs from the 2025-08-23 commit onward, and determine whether the profiler sent production or test data. Remove the value from every public ref, move profiler authentication to an injected secret, add pre-receive/push protection for Grafana formats, and review adjacent experimental branches for copied credentials.
 
+## OBS-003 — Zone checker Portal custody is RPC-trusted
+
+- **Family:** monitoring independence / state authentication
+- **Priority and rating:** Low / Informational under the documented trust model
+- **Assessment state:** source and mock-locally confirmed observation
+- **Deployment state:** present at Zones `016e4c30530f943d6714e895ce0a34e22b01b9c1` and open #1289 head `8c492eb7b8800866ec0d64f43a6abebaa909408a`; operator configuration and deployment unknown
+- **Disclosure state:** not sent; adjacent shared-RPC trust concern is already public in #1216 review
+- **Evidence:** authenticated-header/receipt source inspection, documented Tempo execution trust boundary, and a focused mock showing that the custody helper accepts one unproved RPC balance
+
+### Observation
+
+The observe-only checker independently derives Zone liabilities and authenticates Portal event receipts, but its Portal custody comparison obtains `balanceOf` through a historical RPC call. The canonical-block parameter constrains an honest server; the returned state value is not verified against the authenticated header's state root. A focused mock supplied only an arbitrary encoded balance—no account or storage proof—and the real helper accepted it on current main and the open isolation branch. The complete patched checker library suites still passed.
+
+The checker documentation explicitly treats Tempo consensus/execution as trusted and says it does not re-execute Tempo. This narrows the result to a precise independence qualification: liabilities are rederived, while Portal custody remains trusted RPC execution output. Observe mode cannot modify custody, execution, or consensus.
+
+### How a criminal could use it
+
+An attacker who already controls the checker's trusted Tempo RPC path could report a falsely high custody value to delay the auxiliary detector's insolvency signal or a falsely low value to create a false durable divergence. This does not create insolvency or move funds, and the same foothold already violates a documented infrastructure trust boundary. Exact deployment routing, redundant providers, alerting, and owner expectations are unknown.
+
+### Next gate and remediation
+
+Confirm whether resilience to a faulty or compromised Tempo RPC is an intended property. If it is, retain the authenticated header state root, retrieve the TIP-20 account/storage proof, and verify the Portal balance locally before advancing the checker. A separately operated node or provider quorum is useful defense in depth but is not equivalent to a cryptographic proof. Documentation should explicitly distinguish RPC-trusted custody from receipt-authenticated activity.
+
+Sanitized execution evidence and tracked mock patches: [`evidence/2026-08-27-T-015-security-engineering-review.txt`](evidence/2026-08-27-T-015-security-engineering-review.txt).
+
 ## Public-repository secret scan
 
 All 68 public repository mirrors completed canonical TruffleHog `3.97.0` full-history runs with provider verification disabled: 201,832 per-repository commit visits and 1,281 unverified match records. Raw values and JSON stay ignored under `target/secret-scan/`. Triage found 132 exact detected sequences in current default content, 161 current paths with changed content, 967 deleted paths, and 21 records without file metadata; byte presence is not credential validity.
@@ -486,4 +512,4 @@ For every material research pass:
 
 ## Current disclosure order
 
-The first owner-side hygiene check is OBS-002 because revocation is low-cost and does not require testing the public value. Subject to final owner/scope checks, the recommended vulnerability-discussion order is C-005, C-002, C-010, a coordinated C-006/C-008 release review, C-003, C-009, C-004, C-012, then C-011. C-010's first question is whether server-selected authorization headroom and high-water ordinary settlement are known/accepted; the existing local evidence is sufficient without a live payment. C-012/C-011 first require a private inventory of production or copied `verify_session` consumers and whether response release shares one atomic request-cost debit with voucher advancement. C-009's first question is a low-risk owner-side check of the hosted limit policy and affected-key population; no live authorization is needed. C-001 is an urgent ownership/audit-history question rather than a current takeover claim. C-007 is a lower-priority correctness report.
+The first owner-side hygiene check is OBS-002 because revocation is low-cost and does not require testing the public value. Subject to final owner/scope checks, the recommended vulnerability-discussion order is C-005, C-002, C-010, a coordinated C-006/C-008 release review, C-003, C-009, C-004, C-012, then C-011. C-010's first question is whether server-selected authorization headroom and high-water ordinary settlement are known/accepted; the existing local evidence is sufficient without a live payment. C-012/C-011 first require a private inventory of production or copied `verify_session` consumers and whether response release shares one atomic request-cost debit with voucher advancement. C-009's first question is a low-risk owner-side check of the hosted limit policy and affected-key population; no live authorization is needed. C-001 is an urgent ownership/audit-history question rather than a current takeover claim. C-007 is a lower-priority correctness report. OBS-003 first needs a threat-model question about whether the checker is expected to tolerate a faulty Tempo RPC; no live RPC test is needed.

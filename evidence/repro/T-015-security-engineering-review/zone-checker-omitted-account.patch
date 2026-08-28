@@ -1,0 +1,29 @@
+diff --git a/crates/checker/src/accounting/tests.rs b/crates/checker/src/accounting/tests.rs
+index 9aefdf08f..6427b71bf 100644
+--- a/crates/checker/src/accounting/tests.rs
++++ b/crates/checker/src/accounting/tests.rs
+@@ -315,2 +315,24 @@ fn retains_enabled_token_after_balance_returns_to_zero() {
+     assert_eq!(state.token(token), Some(TokenState::default()));
+ }
++
++#[test]
++fn omitted_value_conserving_balance_reassignment_is_not_checked() {
++    let token = address(1);
++    let alice = AccountKey::new(token, address(2));
++    let mut state = state_with_tokens([token]);
++    state
++        .apply(&[Effect::Account {
++            key: alice,
++            change: BalanceChange::Credit(U256::from(10)),
++        }])
++        .unwrap();
++
++    // This observation is exactly what the runtime builds when a block changes
++    // balances without emitting a decoded Transfer: supply is always read, but
++    // neither changed account appears in the candidate map. A real state with
++    // Alice=0 and Bob=10 is therefore accepted against the ghost state
++    // Alice=10 and Bob=0 because the mutation conserves total supply.
++    state
++        .verify_zone_state([evidence(token, U256::from(10), &[])])
++        .unwrap();
++}

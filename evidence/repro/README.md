@@ -17,5 +17,6 @@ Each evidence transcript states the exact source revision, command, captured res
 | C-010 (Rust) | `C-010-mpp-streaming-overcapture/full-deposit-voucher-poc.patch` |
 | C-011 | `C-011-mpp-rust-voucher-race/full-mpp-content-gate-poc.patch` |
 | C-012 | `C-012-mpp-rust-unit-price-bypass/full-mpp-unit-price-poc.patch` |
+| T-015 / OBS-003 | `T-015-security-engineering-review/repro.sh`, `zone-checker-unproven-custody.patch`, and `zone-checker-omitted-account.patch` |
 
 The shell models create isolated temporary directories with `mktemp -d` and delete them on exit. Patch-based tests should be applied to a disposable checkout. Never apply them to a production build or submit their dummy transactions/credentials to a network.

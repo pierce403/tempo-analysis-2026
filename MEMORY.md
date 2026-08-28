@@ -16,7 +16,9 @@ Curated, non-secret context for future work. Read the relevant linked notes rath
 - [Pinned public-repository manifest, 2026-08-21](recon/2026-08-21-public-repositories.csv)
 - [Redacted public-history secret-scan report, 2026-08-21](recon/2026-08-21-public-repository-secret-scan.md)
 - [MPP streaming and agent-payment economic-security audit, 2026-08-24](recon/2026-08-24-mpp-economic-security-audit.md)
+- [Security-engineering adversarial review, 2026-08-27](recon/2026-08-27-security-engineering-adversarial-review.md)
 - [MPP audit work log, 2026-08-24](memory/logs/2026-08-24.md)
+- [Security-engineering review work log, 2026-08-27](memory/logs/2026-08-27.md)
 - [Continuously maintained redacted findings register](FINDINGS.md)
 - [Repository operating-system setup log, 2026-08-21](memory/logs/2026-08-21.md)
 

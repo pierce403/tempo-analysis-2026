@@ -47,6 +47,17 @@ None.
 
 ## Complete
 
+### T-015 — Adversarially review recent security-engineering changes
+
+- **State**: complete
+- **Outcome**: Pinned and adversarially reviewed the 2026 public work associated with 0xalpharush, horsefacts, and grandizzy across Zones settlement/privilege/incident-response controls, Tempo authorization/accounting invariants, MPP session binding, DEX parity, fuzzing, storage, and the independent checker. No new theft-relevant protocol vulnerability was validated. Retained Low/Informational OBS-003 for the checker's RPC-trusted custody signal, identified three false-green assurance conditions, and preserved current/open/closed/released reach plus positive and negative local results.
+- **Evidence required**:
+  - [x] Public authorship/activity claims and reviewed repositories, pull requests, commits, and releases are pinned to primary sources with an observation date.
+  - [x] Each reviewed transition identifies authenticated inputs, mutable snapshots, accounting obligations, privilege boundaries, failure behavior, and incident-response assumptions where applicable.
+  - [x] Retained observations have deterministic local/dummy reproduction and realistic impact analysis; rejected and unresolved hypotheses retain enough evidence to avoid repeating vacuous checks.
+  - [x] Deployment reach, public prior art, and owner-confirmation gaps are explicit; source review is not presented as a production exploit.
+  - [x] No production transaction, payment, authentication attempt, load test, credential use, employee targeting, or third-party state change was performed.
+
 ### T-014 — Plan authorization-gated C-010 live validation
 
 - **State**: complete

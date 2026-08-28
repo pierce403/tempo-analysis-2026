@@ -38,15 +38,6 @@ Use these states:
 - **Evidence**: `memory/logs/2026-08-21.md`
 - **Graduation**: Promote into a release-review skill after a second audit confirms the same control gap pattern.
 
-### L-004 — Pair full-suite status with executable coverage
-
-- **State**: proposed
-- **Tags**: `#testing` `#contracts`
-- **Observed**: 2026-08-21 during T-008 contract testing.
-- **Lesson**: A complete green test command can still execute none of a library's security-sensitive helpers. Run coverage, compare covered code to the stated product surface, and preserve ignored-test counts before using green status as assurance evidence.
-- **Evidence**: `recon/2026-08-21-contract-test-baseline.md`
-- **Graduation**: Promote into the contract-review procedure after it recurs in another contract system.
-
 ### L-005 — Separate secret-scan evidence from the tracked finding index
 
 - **State**: proposed
@@ -74,9 +65,35 @@ Use these states:
 - **Evidence**: `recon/2026-08-24-mpp-economic-security-audit.md`
 - **Graduation**: Promote into a payment-channel review skill only after the model recurs in another system or the user explicitly approves it.
 
+### L-008 — Pin adoption separately from proposed security design
+
+- **State**: proposed
+- **Tags**: `#source-review` `#releases` `#evidence`
+- **Observed**: 2026-08-27 during T-015's cross-repository security-engineering review.
+- **Lesson**: A pull request can be security-relevant without being current behavior. Record exact head, base, state, merge commit, default-branch ancestry, successor work, release inclusion, and deployment evidence separately; do not attribute a closed, draft, stacked, or open design to current main merely because its idea appears in later discussion.
+- **Evidence**: `recon/2026-08-27-security-engineering-adversarial-review.md`
+- **Graduation**: Promote into a source-review skill after this reach classification is reused in another dated audit.
+
+### L-009 — Authenticate event history and state values independently
+
+- **State**: proposed
+- **Tags**: `#state-machines` `#monitoring` `#authentication`
+- **Observed**: 2026-08-27 during T-015's independent-checker review.
+- **Lesson**: A checker that verifies headers and receipt roots may still trust state returned by an RPC call. For every observation, record which header fields are authenticated, whether receipts or storage values are proven against them, what execution/provider trust remains, and whether a false value affects consensus, funds, or only monitoring.
+- **Evidence**: `recon/2026-08-27-security-engineering-adversarial-review.md`
+- **Graduation**: Promote into a cross-domain observer-review skill after the same split recurs or the user explicitly approves it.
+
 ## Active
 
-None.
+### L-004 — Require an executable positive witness for security properties
+
+- **State**: active
+- **Tags**: `#testing` `#contracts` `#invariants` `#fuzzing`
+- **Observed**: 2026-08-21 during T-008 contract testing; recurred 2026-08-27 during T-015 across protocol invariants and fuzz replay.
+- **Lesson**: A green suite, handler call count, or generic revert does not prove the advertised security property. Require the expected success or specifically classified rejection to occur, make unexpected outcomes fail, preserve ignored/discarded/timeout counts, and use a mutation or deliberately wrong implementation to prove the oracle turns red.
+- **Evidence**: `recon/2026-08-21-contract-test-baseline.md`; `recon/2026-08-27-security-engineering-adversarial-review.md`
+- **Next destination**: Incorporate into a contract/security-test review skill when that procedure is created or explicitly requested.
+
 ## Retired
 
 None.

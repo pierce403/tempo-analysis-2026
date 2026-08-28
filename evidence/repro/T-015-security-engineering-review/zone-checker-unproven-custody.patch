@@ -1,0 +1,47 @@
+diff --git a/crates/checker/src/l1/mod.rs b/crates/checker/src/l1/mod.rs
+index 278fa729..4a86d220 100644
+--- a/crates/checker/src/l1/mod.rs
++++ b/crates/checker/src/l1/mod.rs
+@@ -298,9 +298,10 @@ mod tests {
+     use super::*;
+     use alloy_consensus::Header;
+     use alloy_eips::NumHash;
+-    use alloy_primitives::{B256, Log};
++    use alloy_primitives::{Address, B256, Bytes, Log, U256};
++    use alloy_provider::{ProviderBuilder, mock::Asserter};
+     use alloy_rpc_types_eth::Header as RpcHeader;
+-    use alloy_sol_types::SolEvent;
++    use alloy_sol_types::{SolEvent, SolValue};
+     use tempo_alloy::rpc::TempoHeaderResponse;
+     use tempo_primitives::TempoHeader;
+     use tempo_zone_contracts::ZonePortal;
+@@ -397,4 +398,29 @@ mod tests {
+             AttemptError::Disable(_)
+         ));
+     }
++
++    #[tokio::test]
++    async fn portal_balance_accepts_an_unproven_rpc_claim() {
++        let asserter = Asserter::new();
++        let provider = ProviderBuilder::new_with_network::<TempoNetwork>()
++            .connect_mocked_client(asserter.clone())
++            .erased();
++        let claimed_balance = U256::from(1_000_000_u64);
++
++        // The mock supplies only an eth_call return value. No account/storage
++        // proof tied to the authenticated header is requested or verified.
++        asserter.push_success(&Bytes::from(claimed_balance.abi_encode()));
++
++        let observed = portal_balance(
++            &provider,
++            Address::repeat_byte(0x11),
++            Address::repeat_byte(0x22),
++            B256::repeat_byte(0x33),
++        )
++        .await
++        .unwrap();
++
++        assert_eq!(observed, claimed_balance);
++        assert!(asserter.read_q().is_empty());
++    }
+ }
