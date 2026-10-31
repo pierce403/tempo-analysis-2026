@@ -1,6 +1,6 @@
 # Findings Register
 
-Last updated: **2026-08-28 01:47 UTC** \
+Last updated: **2026-10-31** (public-source mitigation follow-up) \
 Visibility: tracked, redacted index; detailed candidate reports remain ignored under `findings/`
 
 ## Purpose and handling
@@ -17,7 +17,9 @@ An entry in this file is not necessarily a vulnerability, a deployed exposure, o
 
 No external disclosure, GitHub issue, PR, workflow trigger, credential test, cloud change, package publication, or production transaction is authorized by this register.
 
-## Priority summary
+## Priority summary (August assessment)
+
+The following rows preserve the original finding mechanism and conditional impact. Current public-source mitigation status is in the dated table below; source fixes are not assumed deployed.
 
 | ID | Priority | Short title | Assessment / deployment | Theft relevance | Next gate |
 | --- | --- | --- | --- | --- | --- |
@@ -36,6 +38,25 @@ No external disclosure, GitHub issue, PR, workflow trigger, credential test, clo
 | OBS-002 | P2 investigation | Grafana credential-shaped value in public Tempo branch | Public non-default branch head confirmed; validity/scope untested | Could expose or poison profiling telemetry and weaken detection; no direct fund authority established | Revoke/rotate owner-side, inspect scope and audit logs, remove from public refs |
 | OBS-003 | Low / Informational | Zone checker custody is RPC-trusted | Mock-locally confirmed at current source and open #1289; deployment configuration unknown | A compromised trusted RPC could suppress or fabricate the auxiliary solvency signal, not alter funds or consensus | Confirm intended RPC-fault model; authenticate custody against the header state root if required |
 | OBS-001 | Known observation | Removed `changelogs/bot/.env` | Absent from default branch but present at 18 non-default branch heads; public PR says not live | A still-valid repository credential could enable source or automation abuse; no validity or scope established | Confirm revocation and audit the public-exposure interval internally |
+
+## October 31 upstream mitigation status
+
+| ID | Status and evidence | Remaining owner/deployment gate |
+| --- | --- | --- |
+| C-005 | Partial: tip.bot #83 requires current org membership before privileged workflows, but eligible-member PR code still runs in the key-bearing preview path. [Evidence](evidence/2026-10-31-upstream-ci-release.txt) | Confirm key separation, rotation, funds, and approvals. |
+| C-002 | Visible PR checkout/build to Cloudflare token remains despite runner/scanner changes. [Evidence](evidence/2026-10-31-upstream-ci-release.txt) | Confirm token scope and runner policy. |
+| C-006 | Partial: upload-binaries environment added; tag-triggered release/Docker paths lack a visible reviewed-ancestry guard; #8798 open. [Evidence](evidence/2026-10-31-upstream-ci-release.txt) | Confirm private tag and environment rules. |
+| C-008 | Visible PR/release-environment path remains; security tooling and versioned R2 overwrite check added. [Evidence](evidence/2026-10-31-upstream-ci-release.txt) | Confirm STS, signing, environment, and distribution reach. |
+| C-003 | Allowance-backed portal deposit and non-allowance spending-limit distinction remain in current source. [Evidence](evidence/2026-10-31-upstream-protocol-wallet.txt) | Confirm deployed implementation and intended authorization model. |
+| C-010 | Partial: mppx@0.14.0 settles ordinary/scheduled SDK paths within recorded spend; direct payee settlement of signed headroom remains possible in source. [Evidence](evidence/2026-10-31-upstream-mpp.txt) | Confirm deployed reserve and finite client caps. |
+| C-009 | Fixed in source and released by wallet-cli v0.12.1; ambiguous legacy permissions now display unknown. [Evidence](evidence/2026-10-31-upstream-protocol-wallet.txt) | Confirm installed versions and on-chain reconciliation. |
+| C-004 | Visible PR build to Cloudflare preview token remains after runner/scanner changes. [Evidence](evidence/2026-10-31-upstream-ci-release.txt) | Confirm token resource scope. |
+| C-012 | Fixed in mpp-rs #416, released v0.13.0; server-owned price is debited before delivery. [Evidence](evidence/2026-10-31-upstream-mpp.txt) | Find older or copied integrations. |
+| C-011 | Fixed in mpp-rs #415, released v0.13.0; stale concurrent voucher loses atomically. [Evidence](evidence/2026-10-31-upstream-mpp.txt) | Find older deployed consumers. |
+| C-001 | Historical origin control remains an owner-audit question. [Evidence](evidence/2026-10-31-upstream-historical-observations.txt) | Inspect Tempo/Vercel deployment and domain history. |
+| C-007 | Fixed on tempo-std master by #139, but latest formal GitHub release v0.1.6 predates it. [Evidence](evidence/2026-10-31-upstream-protocol-wallet.txt) | Confirm later release and downstream use. |
+| OBS-001 | Path remains at 18 non-default branch heads; absent from master. [Evidence](evidence/2026-10-31-upstream-historical-observations.txt) | Confirm revocation and audit. |
+| OBS-002 | Named branch ref removed; historical commit remains accessible. [Evidence](evidence/2026-10-31-upstream-historical-observations.txt) | Confirm rotation, scope, and residual public history. |
 
 ## Systemic pattern: unreviewed code and privileged CI
 
@@ -510,6 +531,8 @@ For every material research pass:
 5. Update the ignored detailed report and its checksum when deeper evidence changes.
 6. Do not mark an issue “finding,” “unknown to Tempo,” “exploited,” or “resolved” without the corresponding evidence.
 
-## Current disclosure order
+## August disclosure order (historical)
 
 The first owner-side hygiene check is OBS-002 because revocation is low-cost and does not require testing the public value. Subject to final owner/scope checks, the recommended vulnerability-discussion order is C-005, C-002, C-010, a coordinated C-006/C-008 release review, C-003, C-009, C-004, C-012, then C-011. C-010's first question is whether server-selected authorization headroom and high-water ordinary settlement are known/accepted; the existing local evidence is sufficient without a live payment. C-012/C-011 first require a private inventory of production or copied `verify_session` consumers and whether response release shares one atomic request-cost debit with voucher advancement. C-009's first question is a low-risk owner-side check of the hosted limit policy and affected-key population; no live authorization is needed. C-001 is an urgent ownership/audit-history question rather than a current takeover claim. C-007 is a lower-priority correctness report. OBS-003 first needs a threat-model question about whether the checker is expected to tolerate a faulty Tempo RPC; no live RPC test is needed.
+
+As of October 31, discuss the remaining C-002/C-004/C-005/C-006/C-008 trust boundaries and C-003/C-010 residuals with the owner using the dated follow-up evidence. Treat C-009/C-011/C-012 as upgrade and adoption checks, C-007 as a release/consumer check, and OBS-001/002 as revocation-history checks. This register does not authorize new outreach. [CI/release](evidence/2026-10-31-upstream-ci-release.txt), [protocol/wallet](evidence/2026-10-31-upstream-protocol-wallet.txt), [MPP](evidence/2026-10-31-upstream-mpp.txt), [historical observations](evidence/2026-10-31-upstream-historical-observations.txt).

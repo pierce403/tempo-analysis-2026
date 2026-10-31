@@ -19,6 +19,7 @@ Curated, non-secret context for future work. Read the relevant linked notes rath
 - [Security-engineering adversarial review, 2026-08-27](recon/2026-08-27-security-engineering-adversarial-review.md)
 - [MPP audit work log, 2026-08-24](memory/logs/2026-08-24.md)
 - [Security-engineering review work log, 2026-08-27](memory/logs/2026-08-27.md)
+- [Upstream mitigation follow-up, 2026-10-31](memory/logs/2026-10-31.md)
 - [Continuously maintained redacted findings register](FINDINGS.md)
 - [Repository operating-system setup log, 2026-08-21](memory/logs/2026-08-21.md)
 

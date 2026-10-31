@@ -1,0 +1,13 @@
+# Historical origin and repository-secret observation follow-up — 2026-10-31
+
+Source/provenance: Read-only GitHub REST branch/ref/tree metadata on 2026-10-31, compared with the report's 2026-08-23 auth-origin timeline and public-history secret scan. No credential value was fetched, used, or repeated in this artifact.
+
+Procedure: For OBS-001, list all pages of https://api.github.com/repos/tempoxyz/changelogs/branches?per_page=100 ; for each returned head SHA, inspect the recursive tree at https://api.github.com/repos/tempoxyz/changelogs/git/trees/HEAD_SHA?recursive=1 and count exact path bot/.env without fetching its blob. For OBS-002, request https://api.github.com/repos/tempoxyz/tempo/git/refs/heads/zygis/pprof and search public branch refs; inspect only the existence of historical https://github.com/tempoxyz/tempo/commit/e6cd619cee885d081d2d1a41b2a6ff390e593484 . For C-001, compare the historical timeline in evidence/2026-08-23-C-001-auth-origin.txt with owner-controlled deployment and domain logs if authorized; no public response alone proves control history.
+
+Result:
+
+- C-001: No public source proves a remediation of the historical auth.tempo.xyz origin/deployment anomaly or identifies its past controller. A direct attempt in this runtime encountered an intermediary 503, which is not an application-state or closure signal. Tempo/Vercel owner audit remains necessary.
+- OBS-001: The exact path bot/.env remains at 18 of 58 inspected non-default tempoxyz/changelogs branch heads and is absent from master. The earlier removal from the default branch is not removal from all public refs. Prior owner statement that the historical value was not live is recorded in the baseline; revocation and audit confirmation are still private.
+- OBS-002: The tempoxyz/tempo zygis/pprof branch ref returned 404 and no current matching branch was found; historical commit e6cd619cee885d081d2d1a41b2a6ff390e593484 remains publicly retrievable. Branch-ref removal reduces current-head exposure but does not prove historical-object erasure or credential rotation.
+
+Limitations/safety: Metadata-only public inspection; no secret blob, value, credential validity, authentication, auth-origin takeover, deployment change, or owner logs were tested. Ref existence and an intermediary HTTP error cannot establish credential scope or current application control.

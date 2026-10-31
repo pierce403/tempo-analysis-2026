@@ -47,6 +47,15 @@ None.
 
 ## Complete
 
+### T-016 — Reconcile August findings with public upstream mitigations
+
+- **State**: complete
+- **Outcome**: Added a 2026-10-31 source/release follow-up to `REPORT.md` and `FINDINGS.md` for C-001–C-012 and OBS-001/002. Historical PoCs remain tied to August revisions, while corresponding upstream changes, residual trust boundaries, and unknown adoption/private controls are recorded separately.
+- **Evidence required**:
+  - [x] Pinned primary-source PR, code, release, and ref evidence is tracked in four dated `evidence/2026-10-31-upstream-*.txt` records with read-only procedures and limits.
+  - [x] Every new report claim links tracked evidence; `python3 scripts/verify_report_evidence.py --require-tracked` and diff checks pass.
+  - [x] Source/release status does not imply production adoption, private-control absence, or causal attribution to this report.
+
 ### T-015 — Adversarially review recent security-engineering changes
 
 - **State**: complete
